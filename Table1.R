@@ -12,7 +12,7 @@ data <- fread('/Users/maximilianlindholz/Final/baseinfo5.csv')
 myVars <- c("age","Elixhauser","admissionapache", "admissionsofa", "meanAbsoluteRass")
 
 ## Vector of categorical variables that need transformation
-catVars <- c("geschlecht", "obes","dialyse", "ecmo", "highflow", 
+catVars <- c( "obes","dialyse", "ecmo", "highflow", 
              "intubated", "maskedventilation", "tracheostomie","prone")
 
 data <- data.frame(data)
@@ -27,3 +27,6 @@ tab1 <- CreateTableOne(vars = c("age","Elixhauser","admissionapache", "admission
                                                    "intubated", "maskedventilation", "tracheostomie","prone","Fachrichtung"))
 print(tab1, showAllLevels = TRUE)
 
+tab3Mat <- print(tab1,showAllLevels = TRUE, quote = FALSE, noSpaces = TRUE, printToggle = FALSE)
+## Save to a CSV file
+write.csv(tab3Mat, file = "myTable.csv")

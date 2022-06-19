@@ -70,8 +70,7 @@ a <- long %>%                               # Summary by group using dplyr
             q3 = quantile(c_rate, 0.95),
             max = max(c_rate))
 
-library(gt)
-gt(a)
+write.csv(a, file = "descr.csv")
 
 # mortality
 mobimit <- unique(long$c_pseudonym)
