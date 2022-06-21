@@ -28,15 +28,11 @@ prone2 <- fread('/Users/maximilianlindholz/Final/vierterexpocobra5.csv')
 prone2 <- subset(prone2, prone2$c_name == 'LAGERUNG')
 prone2$c_vstring <- tolower(prone2$c_vstring)
 test2 <- prone2[grepl("bauch", prone2$c_vstring),]
-key <- fread('/Users/maximilianlindholz/Final/data_vol4/cohort.csv')
-key6 <- key %>% select('c_pseudonym','co6_patient_id')
-key6 <- distinct(key6)
+key6 <- fread('/Users/maximilianlindholz/Final/key6.csv')
 test <- merge(test, key6, by = 'co6_patient_id')
 
 # Prone 5
-key5 <- key %>% select('c_pseudonym','co5_dat_id')
-key5 <- distinct(key5)
-key5 <- na.omit(key5)
+key5 <- fread('/Users/maximilianlindholz/Final/key5.csv')
 test2 <- merge(test2, key5, by.x = 'c_dat_id', by.y = 'co5_dat_id')
 test <- test %>% select('c_pseudonym', 'c_date_time_to')
 test2 <- test2 %>% select('c_pseudonym', 'c_datum_fuer_wann')

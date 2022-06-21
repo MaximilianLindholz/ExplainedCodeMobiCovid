@@ -6,12 +6,8 @@ data <- fread('/Users/maximilianlindholz/Final/baseinfo2.csv')
 pt <- fread('/Users/maximilianlindholz/Final/pt.csv')
 
 # key
-key <- fread('/Users/maximilianlindholz/Final/data_vol4/cohort.csv')
-key5 <- key %>% select('c_pseudonym', 'co5_dat_id')
-key5 <- na.omit(key5)
-key6 <- key %>% select('c_pseudonym', 'co6_patient_id')
-key6 <- na.omit(key6)
-key6 <- distinct(key6)
+key5 <- fread('/Users/maximilianlindholz/Final/key5.csv')
+key6 <- fread('/Users/maximilianlindholz/Final/key6.csv')
 
 # first apache
 # apache cobra5
@@ -24,7 +20,6 @@ apache5 <- merge(apache, key5, by.x='c_dat_id', by.y = 'co5_dat_id')
 scores6 <- fread('/Users/maximilianlindholz/MobiCovid/CO6_Data_Long-SOFA, GCS, BPS, RASS, APACHE2.csv')
 scores6 <- scores6 %>% select('co6_patient_id','c_var_id', 'c_date_time_to','c_val')
 apache6 <- subset(scores6, scores6$c_var_id == 106868)
-apache6$co6_patient_id <- as.character(apache6$co6_patient_id)
 apache6 <- merge(apache6, key6, by = 'co6_patient_id')
 
 apache5 <- apache5 %>% select('c_pseudonym', 'c_gesamtscore', 'c_datum_fure_wann')
@@ -47,7 +42,6 @@ data <- merge(data, apache, by = 'c_pseudonym', all.x = TRUE)
 
 # sofa score
 sofa6 <- subset(scores6,scores6$c_var_id == 101490)
-sofa6$co6_patient_id <- as.character(sofa6$co6_patient_id)
 sofa6 <- merge(sofa6, key6, by = 'co6_patient_id')
 sofa6 <- sofa6 %>% select('c_pseudonym', 'c_date_time_to', 'c_val')
 
@@ -71,7 +65,6 @@ data <- merge(data, sofa, by = 'c_pseudonym', all.x = TRUE)
 # rass part, mean rass of day, mean of days, for long analysis i will re read the RASS scores and assign them in Longcleanup
 rass6 <- subset(scores6, scores6$c_var_id == 106195)
 rass6 <- rass6 %>% select('co6_patient_id','c_date_time_to', 'c_val')
-rass6$co6_patient_id <- as.character(rass6$co6_patient_id)
 rass6 <- merge(rass6, key6, by.x='co6_patient_id', by.y = 'co6_patient_id')
 rass6$c_val[rass6$c_val<0] <- rass6$c_val[rass6$c_val<0]*-1
 rass6 <- rass6 %>% select ('c_date_time_to', 'c_val', 'c_pseudonym')
@@ -79,7 +72,6 @@ rass5 <- fread('/Users/maximilianlindholz/Final/vierterexpocobra5.csv')
 rass5 <- subset(rass5, rass5$c_name == 'Rass')
 rass5 <- rass5%>% select('c_datum_fuer_wann','c_vstring','c_dat_id')
 rass5 <- na.omit(rass5)
-key5 <- key5 %>% distinct()
 rass5 <- merge(rass5, key5, by.x='c_dat_id', by.y = 'co5_dat_id')
 rass5 <- rass5 %>% select(-c('c_dat_id'))
 names(rass5)[2]<-'c_val'

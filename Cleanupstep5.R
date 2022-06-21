@@ -5,6 +5,10 @@ library(tidyverse)
 data <- fread('/Users/maximilianlindholz/Final/baseinfo4.csv')
 full <- fread('/Users/maximilianlindholz/Final/pt.csv')
 
+# key
+key5 <- fread('/Users/maximilianlindholz/Final/key5.csv')
+key6 <- fread('/Users/maximilianlindholz/Final/key6.csv')
+
 # medis here for rate
 medis <- fread('/Users/maximilianlindholz/Final/medicationclean.csv')
 medis <- subset(medis, medis$c_rate>0)
@@ -38,11 +42,14 @@ test <- dt[, list(c_pseudonym,length, c_rate,c_application_start,c_application_e
 test$date<-as.Date(test$date)
 
 # index to remove duplicates later, time to posict
-full$index <- 1:66013
+full$index <- 1:63473
+# calc for flow chart I rest below
+# calc <- full
 full$exacttime <- chartr('.', '-', full$exacttime)
 full$exacttime <- as.POSIXct(full$exacttime, format = "%d-%m-%y %H:%M")
 full <- merge(full, test, by.x = c('c_pseudonym','c_date_time_to'), by.y = c('c_pseudonym','date'), all.x = TRUE)
 full$c_rate[is.na(full$c_rate)]<-0
+
 
 # only take cases where katecholamines were administered during pt
 full <- subset(full, !is.na(full$c_application_end))
@@ -63,16 +70,6 @@ full4 <- subset(full4, full4$c_rate >0)
 long <- full4 %>% dplyr::select('c_pseudonym','exacttime', 'IMS','c_val','c_rate', 'length','c_date_time_to')
 long$rateunit <- "µg/kg/min"
 
-# key
-key <- fread('/Users/maximilianlindholz/Final/data_vol4/cohort.csv')
-key5 <- key %>% dplyr::select('c_pseudonym', 'co5_dat_id')
-key5 <- na.omit(key5)
-key5 <- key5 %>% distinct(.keep_all = TRUE)
-
-key6 <- key %>% dplyr::select('c_pseudonym', 'co6_patient_id')
-key6 <- na.omit(key6)
-key6 <- distinct(key6)
-
 # first apache
 # apache cobra5
 scores5 <- fread('/Users/maximilianlindholz/Final/vierterexpocobra5.csv')
@@ -82,7 +79,6 @@ rass <- merge(rass, key5, by.x='c_dat_id', by.y = 'co5_dat_id')
 scores6 <- fread('/Users/maximilianlindholz/MobiCovid/CO6_Data_Long-SOFA, GCS, BPS, RASS, APACHE2.csv')
 scores6 <- scores6 %>% dplyr::select('co6_patient_id','c_var_id', 'c_date_time_to','c_val')
 rass6 <- subset(scores6, scores6$c_var_id == 106195)
-rass6$co6_patient_id<-as.character(rass6$co6_patient_id)
 rass6 <- merge(rass6, key6, by = 'co6_patient_id')
 rass5 <- rass %>% dplyr::select('c_pseudonym', 'c_vstring', 'c_datum_fuer_wann')
 rass6 <- rass6 %>% dplyr::select('c_pseudonym', 'c_val', 'c_date_time_to')
@@ -95,7 +91,7 @@ rass$c_val<- abs(rass$c_val)
 
 # merge rass and long
 long$c_date_time_to<-as.Date(long$c_date_time_to)
-long$index <- 1:3772
+long$index <- 1:3462
 test4 <- merge(long, rass, by.x = c('c_pseudonym','c_date_time_to'), by.y = c('c_pseudonym','date'))
 test4 <- subset(test4, test4$c_datum_fuer_wann <= test4$exacttime)
 test5 <- test4 %>% arrange(desc(c_val.y)) %>%filter(duplicated(index) == FALSE)
@@ -112,6 +108,13 @@ yn <- unique(norepiyn$c_pseudonym)
 
 data$norepinephrine <-0
 data$norepinephrine[data$c_pseudonym%in%yn]<-1
+
+# flow chart II
+# calc <- merge(calc, data, by = "c_pseudonym")
+# calc <- subset(calc, calc$norepinephrine ==1)
+# 35555 => non norepi group 59538- = 23983
+# calc <- subset(calc, calc$c_date_time_to <= calc$entl)
+
 
 write.table(test5, '/Users/maximilianlindholz/Final/during.csv', sep = '|',row.names = F)
 write.table(data, '/Users/maximilianlindholz/Final/baseinfo5.csv', sep = '|',row.names = F)

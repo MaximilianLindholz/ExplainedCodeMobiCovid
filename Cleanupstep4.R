@@ -60,15 +60,10 @@ data$tod[data$c_pseudonym %in% tod]<-1
 data$geschlecht[data$geschlecht == "W"]<-"F"
 data <- subset(data, data$geschlecht !="NA")
 data <- subset(data, data$geschlecht != 'U')
-# 9814
+# 9816
 
 data <- subset(data, !is.na(data$meanAbsoluteRass)&!is.na(data$admissionsofa)&!is.na(data$admissionapache))
-# 8646
-
-data <- subset(data, data$perday<4) # as per usual, i found a mistake in data entry, where one entry was labelled roughly 30 times per day, which is not correct, this is to prevent unrealistic results
-# 8645
-
-
+# 7888
 
 data <- data %>% select(-c('c_bwedt.y', 'c_bewty.x', 'c_bwart.x',  'c_bwedt.x', 'c_bewty.y','c_bwart.y'))
 

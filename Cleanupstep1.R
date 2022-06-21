@@ -13,12 +13,21 @@ fallnummer$co6_patient_id<-as.character(fallnummer$co6_patient_id)
 cobra6 <- subset(base,base$COBRA ==6)
 cobra6 <-merge(cobra6, fallnummer, by.x = 'Fallnr', by.y = 'Fallnummer')
 key <- fread('/Users/maximilianlindholz/Final/data_vol4/cohort.csv')
+
+# to ensure, that there is a clear identification, one pseudonym may have multiple co6 or co5 ids, however, no co6/5 id can have multiple pseudonyms, otherwise we create duplicates, given that these entrys might be faulty, we remove them completly 
+key6 <- key %>% select('c_pseudonym', 'co6_patient_id')
+key6 <- key6 %>% distinct()
+key6 <- key6 %>% group_by(co6_patient_id) %>% filter(n() == 1)
+
 cobra6 <- merge(cobra6, key,by = 'co6_patient_id')
 cobra6 <- cobra6 %>% select('Fallnr','stationsbezeichnung','geschlecht', 'aufn','entl','Behandlungsdauer', 'COBRA','c_vstring', 'c_pseudonym')
 
 # identifiers cobra 5
 cobra5 <- subset(base,base$COBRA ==5)
-key5 <-fread('/Users/maximilianlindholz/MobiCovid/Cobra5/cohort-copra5.csv')
+key5 <- key %>% select('c_pseudonym', 'co5_dat_id')
+key5 <- key5 %>% distinct()
+key5 <- key5 %>% group_by(co5_dat_id) %>% filter(n() == 1)
+
 cobra5<-merge(cobra5, key5, by.x = 'co5_dat_id', by.y = 'co5_dat_id' )
 cobra5 <- cobra5 %>% select('Fallnr','stationsbezeichnung','geschlecht', 'aufn','entl','Behandlungsdauer', 'COBRA','c_vstring', 'c_pseudonym')
 
@@ -96,7 +105,6 @@ weight <- weight %>% select('co6_patient_id','c_val')
 weight$c_val <- as.integer(weight$c_val)
 weight$co6_patient_id <- as.numeric(weight$co6_patient_id)
 weight <- aggregate(c_val~co6_patient_id,data = weight, max,na.rm=T)
-key6 <- key %>% select('c_pseudonym','co6_patient_id')
 weight <- merge(weight, key6, by = 'co6_patient_id')
 weight <- weight %>% select('c_pseudonym','c_val')
 names(weight)[2]<- 'Gewicht'
@@ -303,7 +311,7 @@ names(ids)[1]<-'co6_patient_id'
 
 full6 <- merge(full6, ids, by = 'co6_patient_id')
 full6 <- full6 %>% select('c_pseudonym', 'IMS', 'c_date_time_to','c_val')
-full <- rbind(full5,full6) # 118782 =>
+full <- rbind(full5,full6) # 118782 
 
 # counting variable
 full$IMS<- as.integer(full$IMS)
@@ -339,5 +347,5 @@ names(full)[6]<-'exacttime'
 # 
 write.table(data, '/Users/maximilianlindholz/Final/baseinfo.csv', sep = '|', row.names = FALSE)
 write.table(full, '/Users/maximilianlindholz/Final/pt.csv', sep = '|',row.names = F)
-
-
+write.table(key5, '/Users/maximilianlindholz/Final/key5.csv', sep = '|',row.names = F)
+write.table(key6, '/Users/maximilianlindholz/Final/key6.csv', sep = '|',row.names = F)
