@@ -11,6 +11,7 @@ long <- fread('/Users/maximilianlindholz/Final/during.csv')
 # general patient data
 data <- fread('/Users/maximilianlindholz/Final/baseinfo5.csv')
 
+iv <- fread('/Users/maximilianlindholz/Final/norepiclean.csv')
 #qc/classes
 summary(data)
 str(data)
@@ -93,6 +94,12 @@ losmodel <- lm(Behandlungsdauer ~geschlecht+age+Elixhauser+ dialyse+ecmo+highflo
 summary(losmodel)
 Anova(losmodel, type = 3)
 plot(losmodel)
+
+# density plot
+
+
+
+
 
 
 # only survivors
