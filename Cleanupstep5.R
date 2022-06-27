@@ -36,6 +36,9 @@ iv$c_rate[iv$c_rate_unit == "mg/kg/h"]<-(iv$c_rate[iv$c_rate_unit == "mg/kg/h"]/
 iv$c_rate[iv$c_rate_unit == "mg/kg/d"]<-(iv$c_rate[iv$c_rate_unit == "mg/kg/d"]/1440)*1000
 iv$c_rate_unit <- "µg/kg/min"
 
+# write clean NA
+write.table(iv, '/Users/maximilianlindholz/Final/norepiclean.csv', sep = '|',row.names = F)
+
 # data.table solution for expand rate to multiple days if given over multiple days (for later merge)
 dt <- data.table(iv)
 test <- dt[, list(c_pseudonym,length, c_rate,c_application_start,c_application_end, date = seq(c_application_start, c_application_end, by = "day")), by = 1:nrow(dt)]
@@ -115,7 +118,23 @@ data$norepinephrine[data$c_pseudonym%in%yn]<-1
 # 35555 => non norepi group 59538- = 23983
 # calc <- subset(calc, calc$c_date_time_to <= calc$entl)
 
+# covid yes/no
+data$CovidStationstyp<-as.factor(data$CovidStationstyp)
+covid <- fread('/Users/maximilianlindholz/Final/Covid.csv')
+fnmmer6 <- fread('/Users/maximilianlindholz/MobiCovid/co6_cohort.csv')
+covid6 <- merge(covid, fnmmer6, by ='Fallnummer' )
+covid6 <- merge(covid6, key6, by = 'co6_patient_id')
+fnmmer5 <- fread('/Users/maximilianlindholz/MobiCovid/Cobra5/co5_cohort.csv')
+covid5 <- merge(covid, fnmmer5, by = 'Fallnummer')
+covid5 <- merge(covid5, key5, by = 'co5_dat_id')
+covid5 <- covid5 %>% select('c_pseudonym')
+covid6 <- covid6 %>% select('c_pseudonym')
+covid <- rbind(covid5, covid6)
+covid <- covid %>% distinct()
+data$covid <- 0
+data$covid[data$c_pseudonym %in% covid$c_pseudonym]<-1
 
+#write part
 write.table(test5, '/Users/maximilianlindholz/Final/during.csv', sep = '|',row.names = F)
 write.table(data, '/Users/maximilianlindholz/Final/baseinfo5.csv', sep = '|',row.names = F)
 
