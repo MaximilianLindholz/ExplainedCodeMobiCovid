@@ -110,7 +110,7 @@ data <- cbind(data, newfactor2)
 data <- data %>% select(-c("NonCovid","Established","Surge"))
 names(data)[73]<-'CovidStationstyp'
 
-# merge average physiotime, a lot of missing and destroyed data, will focus on that in the next steps (e.g. by adding data extracted from the free text), variable to be taken with care
+# merge average physiotime, a lot of missing data
 physiotime <- fread('/Users/maximilianlindholz/Final/physiotimes.csv')
 physiotime <- physiotime %>% group_by(c_pseudonym) %>% summarise(c_val =mean(c_val))
 physiotime <- na.omit(physiotime)

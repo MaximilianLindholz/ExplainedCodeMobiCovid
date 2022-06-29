@@ -49,7 +49,7 @@ aufenthaltsdaten <- merge(aufnahme, entlassung, by ='c_pseudonym')
 aufenthaltsdaten$HospLOS <- difftime(aufenthaltsdaten$c_bwedt.y, aufenthaltsdaten$c_bwedt.x, units = "days")
 aufenthaltsdaten$HospLOS<-as.integer(aufenthaltsdaten$HospLOS)
 
-# second step of data cleaning (Exclusion Criteria) 9863 cases at start and cleaning of factors
+# second step of data cleaning (Exclusion Criteria) 9863 cases at start and cleaning of factors // The first part with the including criteria can be found in Cleanupstep 1
 # merge First exclusion step, aufenthaltsdata was not complete (admission or discharge missing/faulty)
 data <- merge(data, aufenthaltsdaten, by = 'c_pseudonym')
 data$tod <-0

@@ -133,7 +133,6 @@ base <- subset(base, !base$stationsbezeichnung %in% c("WAN-PACU", "MPACU", "W50"
 
 # Inclusioncriteria: 
 base <- subset(base, !is.na(base$age)) 
-base <- subset(base, !is.na(base$geschlecht)) 
 base <- subset(base, base$age >= 18) 
 base <- subset(base, base$age < 101) # obious mistake, when age was unknown they often wrote 1.1.1900 or 1.1.1800
 base <- subset(base, base$Behandlungsdauer >2) 
@@ -291,7 +290,7 @@ data$index <- 1:9863
 full <- fread('/Users/maximilianlindholz/Final/physiotextelabeled.csv')
 full <- full %>% select('c_val','c_dat_id','co6_patient_id','c_date_time_to', 'IMS')
 
-# remove faulty/non complete entrys
+# split into 5 and 6 documentation parts
 full5 <- subset(full, !is.na(full$c_dat_id))
 full6 <- subset(full, is.na(full$c_dat_id))
 key5$co5_dat_id<-as.character(key5$co5_dat_id)
