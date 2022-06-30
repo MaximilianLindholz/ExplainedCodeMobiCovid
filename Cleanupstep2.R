@@ -5,19 +5,6 @@ library(tidyverse)
 data <- fread('/Users/maximilianlindholz/Final/baseinfo.csv')
 full <- fread('/Users/maximilianlindholz/Final/pt.csv')
 
-# frühmobi
-frühmobi <- merge(full, data, by = 'c_pseudonym')
-frühmobi$c_date_time_to <- as.Date(frühmobi$c_date_time_to)
-frühmobi$ersteAufnahme <- as.Date(frühmobi$ersteAufnahme)
-frühmobi <- subset(frühmobi, frühmobi$c_date_time_to < frühmobi$aufn +3)
-frühmobi <- unique(frühmobi$c_pseudonym)
-
-data$frühmobi <-0
-data$frühmobi[data$c_pseudonym %in% frühmobi]<-1
-
-#Outcome (PT per day)
-data$perday <- data$n/data$Behandlungsdauer
-
 # Prone
 # Prone 6
 prone <- read.csv('/Applications/CO6_Data_String.csv', sep ='|')
@@ -45,9 +32,6 @@ test <- subset(test, test$c_date_time_to>=test$aufn & test$c_date_time_to <= tes
 prone <- unique(test$c_pseudonym)
 data$prone <-0
 data$prone[data$c_pseudonym %in% prone]<-1
-
-# No PT done: NA => 0
-data$perday[is.na(data$perday)]<-0
 
 # write part
 write.table(data, '/Users/maximilianlindholz/Final/baseinfo2.csv', sep = '|', row.names = FALSE)

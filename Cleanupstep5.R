@@ -45,7 +45,7 @@ test <- dt[, list(c_pseudonym,length, c_rate,c_application_start,c_application_e
 test$date<-as.Date(test$date)
 
 # index to remove duplicates later, time to posict
-full$index <- 1:63473
+full$index <- 1:80670
 # calc for flow chart I rest below
 # calc <- full
 full$exacttime <- chartr('.', '-', full$exacttime)
@@ -82,7 +82,7 @@ rass <- merge(rass, key5, by.x='c_dat_id', by.y = 'co5_dat_id')
 scores6 <- fread('/Users/maximilianlindholz/MobiCovid/CO6_Data_Long-SOFA, GCS, BPS, RASS, APACHE2.csv')
 scores6 <- scores6 %>% dplyr::select('co6_patient_id','c_var_id', 'c_date_time_to','c_val')
 rass6 <- subset(scores6, scores6$c_var_id == 106195)
-rass6 <- merge(rass6, key6, by = 'co6_patient_id')
+rass6 <- merge(rass6, key6, by = 'co6_patient_id', allow.cartesian = T)
 rass5 <- rass %>% dplyr::select('c_pseudonym', 'c_vstring', 'c_datum_fuer_wann')
 rass6 <- rass6 %>% dplyr::select('c_pseudonym', 'c_val', 'c_date_time_to')
 rass5$c_vstring<-as.integer(rass5$c_vstring)
@@ -94,7 +94,7 @@ rass$c_val<- abs(rass$c_val)
 
 # merge rass and long
 long$c_date_time_to<-as.Date(long$c_date_time_to)
-long$index <- 1:3462
+long$index <- 1:4938
 test4 <- merge(long, rass, by.x = c('c_pseudonym','c_date_time_to'), by.y = c('c_pseudonym','date'))
 test4 <- subset(test4, test4$c_datum_fuer_wann <= test4$exacttime)
 test5 <- test4 %>% arrange(desc(c_val.y)) %>%filter(duplicated(index) == FALSE)
@@ -112,12 +112,6 @@ yn <- unique(norepiyn$c_pseudonym)
 data$norepinephrine <-0
 data$norepinephrine[data$c_pseudonym%in%yn]<-1
 
-# flow chart II
-# calc <- merge(calc, data, by = "c_pseudonym")
-# calc <- subset(calc, calc$norepinephrine ==1)
-# 35555 => non norepi group 59538- = 23983
-# calc <- subset(calc, calc$c_date_time_to <= calc$entl)
-
 # covid yes/no
 data$CovidStationstyp<-as.factor(data$CovidStationstyp)
 covid <- fread('/Users/maximilianlindholz/Final/Covid.csv')
@@ -133,6 +127,49 @@ covid <- rbind(covid5, covid6)
 covid <- covid %>% distinct()
 data$covid <- 0
 data$covid[data$c_pseudonym %in% covid$c_pseudonym]<-1
+
+# if patient was documented multiple times, take longest continous documentation
+test <- fread('/Users/maximilianlindholz/Final/index.csv')
+test3 <- data %>% group_by(index, aufn) %>% filter(HospLOS==max(HospLOS))
+data <- test3
+
+#Outcome (PT per day)
+data$perday <- data$n/data$Behandlungsdauer
+
+# frühmobi
+frühmobi <- merge(full, data, by = 'c_pseudonym')
+frühmobi$c_date_time_to <- as.Date(frühmobi$c_date_time_to)
+frühmobi$ersteAufnahme <- as.Date(frühmobi$ersteAufnahme)
+frühmobi <- subset(frühmobi, frühmobi$c_date_time_to < frühmobi$aufn +3)
+frühmobi <- unique(frühmobi$c_pseudonym)
+data$frühmobi <-0
+data$frühmobi[data$c_pseudonym %in% frühmobi]<-1
+
+# Exclusionsteps start: 23586, 80670 physioeinheiten
+data <- subset(data, data$Behandlungsdauer>2)
+data <- subset(data, data$age>17)
+sum(data$n[!is.na(data$n)]) #76437
+# 11864
+data<- subset(data, !is.na(data$medianAbsoluteRass))
+data<- subset(data, !is.na(data$admissionsofa))
+data<- subset(data, !is.na(data$admissionapache))
+data<- subset(data, data$geschlecht %in% c("M","F", "W"))
+data<- subset(data, !is.na(data$age))
+data<- subset(data, data$age <101)
+# 10424
+data$perday[is.na(data$perday)]<-0
+sum(data$n[!is.na(data$n)]) #71714
+
+# sex
+data$geschlecht[data$geschlecht == "W"]<-"F"
+
+length(data$norepinephrine[data$norepinephrine==1])# 4824
+sum(data$n[!is.na(data$n)&data$norepinephrine==1]) #38840
+length(data$norepinephrine[data$norepinephrine==0]) #5601
+sum(data$n[!is.na(data$n)&data$norepinephrine==0]) #32874
+
+test5 <- subset(test5, test5$c_pseudonym %in% unique(data$c_pseudonym))
+length(unique(test5$c_pseudonym)) #3187
 
 #write part
 write.table(test5, '/Users/maximilianlindholz/Final/during.csv', sep = '|',row.names = F)

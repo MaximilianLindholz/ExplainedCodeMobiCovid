@@ -40,9 +40,10 @@ apache <- subset(apache, apache$c_gesamtscore < 70) # clearly wrong entrys with 
 names(apache)[2]<-'admissionapache'
 data <- merge(data, apache, by = 'c_pseudonym', all.x = TRUE)
 
-# sofa score
+
+# sofa score // cartesian true, because i will filter later on with the index file from cleanup1
 sofa6 <- subset(scores6,scores6$c_var_id == 101490)
-sofa6 <- merge(sofa6, key6, by = 'co6_patient_id')
+sofa6 <- merge(sofa6, key6, by = 'co6_patient_id', allow.cartesian = T)
 sofa6 <- sofa6 %>% select('c_pseudonym', 'c_date_time_to', 'c_val')
 
 sofa <- subset(scores5, scores5$c_var_id == 20512778)
@@ -65,7 +66,7 @@ data <- merge(data, sofa, by = 'c_pseudonym', all.x = TRUE)
 # rass part, mean rass of day, mean of days, for long analysis i will re read the RASS scores and assign them in Longcleanup
 rass6 <- subset(scores6, scores6$c_var_id == 106195)
 rass6 <- rass6 %>% select('co6_patient_id','c_date_time_to', 'c_val')
-rass6 <- merge(rass6, key6, by.x='co6_patient_id', by.y = 'co6_patient_id')
+rass6 <- merge(rass6, key6, by.x='co6_patient_id', by.y = 'co6_patient_id', allow.cartesian = T)
 rass6$c_val[rass6$c_val<0] <- rass6$c_val[rass6$c_val<0]*-1
 rass6 <- rass6 %>% select ('c_date_time_to', 'c_val', 'c_pseudonym')
 rass5 <- fread('/Users/maximilianlindholz/Final/vierterexpocobra5.csv')
@@ -82,10 +83,10 @@ rass$c_val<- as.integer(rass$c_val)
 rass <- merge(rass, check, by = 'c_pseudonym')
 rass <- subset(rass, rass$c_date_time_to >= rass$aufn & rass$c_date_time_to<= rass$entl)
 rass$c_val <- abs(rass$c_val)
-rass <- rass %>% group_by(c_pseudonym,c_date_time_to) %>% summarise(c_val =mean(c_val))
-rass <- rass %>% group_by(c_pseudonym) %>% summarise(c_val =mean(c_val))
+rass <- rass %>% group_by(c_pseudonym,c_date_time_to) %>% summarise(c_val =median(c_val))
+rass <- rass %>% group_by(c_pseudonym) %>% summarise(c_val =median(c_val))
 data <- merge(data, rass, by = 'c_pseudonym', all.x = TRUE)
-names(data)[78]<-'meanAbsoluteRass'
+names(data)[75]<-'medianAbsoluteRass'
 
 #fachrichtung as a factor not unique column
 newfactor <- rep(NA, times=nrow(data))
@@ -97,7 +98,7 @@ newfactor[a == 1 & data$InternalMedicine==1] <- "InternalMedicine"
 newfactor[a == 1 & data$CardiacSurgery==1] <- "CardiacSurgery"
 data <- cbind(data, newfactor)
 data <- data %>% select(-c('InterdisciplinaryOperative', 'Neurocritical', 'InternalMedicine', 'CardiacSurgery'))
-names(data)[75]<-'Fachrichtung'
+names(data)[72]<-'Fachrichtung'
 
 # covid stationstyp as factor not unique column
 newfactor2 <- rep(NA, times=nrow(data))
@@ -108,7 +109,7 @@ newfactor2[a == 1 & data$Established==1] <- "Established"
 newfactor2[a == 1 & data$Surge==1] <- "Surge"
 data <- cbind(data, newfactor2)
 data <- data %>% select(-c("NonCovid","Established","Surge"))
-names(data)[73]<-'CovidStationstyp'
+names(data)[70]<-'CovidStationstyp'
 
 # merge average physiotime, a lot of missing data
 physiotime <- fread('/Users/maximilianlindholz/Final/physiotimes.csv')

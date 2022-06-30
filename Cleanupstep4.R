@@ -9,15 +9,6 @@ medis <- fread('/Users/maximilianlindholz/Final/medicationclean.csv')
 # check time during stay
 medis <- subset(medis, medis$c_application_start >=medis$aufn & medis$c_application_start<=medis$entl)
 
-# data (unncessaryly long code, could have used -c...)
-data <- data %>% select('c_pseudonym', 'geschlecht', 'Behandlungsdauer', 'aufn', 'entl', 'age', 
-                        'chf', 'carit', 'valv', 'pcd', 'pvd', 'hypunc', 'hypc', 'para', 'ond', 'cpd',
-                        'diabunc', 'diabc', 'hypothy', 'rf', 'ld', 'pud', 'aids', 'lymph', 'metacanc',
-                        'solidtum', 'rheumd', 'coag', 'obes', 'wloss', 'fed', 'blane', 'dane', 'alcohol',
-                        'drug', 'psycho', 'depre', 'Elixhauser',   'Gewicht', 'dialyse', 'ecmo', 'highflow',
-                        'intubated', 'maskedventilation', 'tracheostomie', 'index', 'n', 'max', 'min',
-                        'frühmobi', 'perday', 'prone', 'admissionapache', 'admissionsofa', 'meanAbsoluteRass',
-                        'Fachrichtung', 'CovidStationstyp','averagelengthofPT')
 
 # # admission and discharge
 check <- data %>% select('c_pseudonym','aufn','entl')
@@ -49,23 +40,10 @@ aufenthaltsdaten <- merge(aufnahme, entlassung, by ='c_pseudonym')
 aufenthaltsdaten$HospLOS <- difftime(aufenthaltsdaten$c_bwedt.y, aufenthaltsdaten$c_bwedt.x, units = "days")
 aufenthaltsdaten$HospLOS<-as.integer(aufenthaltsdaten$HospLOS)
 
-# second step of data cleaning (Exclusion Criteria) 9863 cases at start and cleaning of factors // The first part with the including criteria can be found in Cleanupstep 1
-# merge First exclusion step, aufenthaltsdata was not complete (admission or discharge missing/faulty)
-data <- merge(data, aufenthaltsdaten, by = 'c_pseudonym')
+# merge part
+data <- merge(data, aufenthaltsdaten, by = 'c_pseudonym', all.x = T)
 data$tod <-0
 data$tod[data$c_pseudonym %in% tod]<-1
-#9852
-
-# sex
-data$geschlecht[data$geschlecht == "W"]<-"F"
-data <- subset(data, data$geschlecht !="NA")
-data <- subset(data, data$geschlecht != 'U')
-# 9816
-
-data <- subset(data, !is.na(data$meanAbsoluteRass)&!is.na(data$admissionsofa)&!is.na(data$admissionapache))
-# 7888
-
-data <- data %>% select(-c('c_bwedt.y', 'c_bewty.x', 'c_bwart.x',  'c_bwedt.x', 'c_bewty.y','c_bwart.y'))
 
 # write table
 write.table(data, '/Users/maximilianlindholz/Final/baseinfo4.csv', sep = '|', row.names = FALSE)
