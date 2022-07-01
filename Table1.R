@@ -28,5 +28,6 @@ tab1 <- CreateTableOne(vars = c("age","Elixhauser","admissionapache", "admission
 print(tab1, showAllLevels = TRUE)
 
 tab3Mat <- print(tab1,showAllLevels = TRUE, quote = FALSE, noSpaces = TRUE, printToggle = FALSE)
+
 ## Save to a CSV file
-write.csv(tab3Mat, file = "myTable.csv")
+write.csv(tab3Mat, file = '/Users/maximilianlindholz/Desktop/Promotion:Arbeit/Paper Text/myTable.csv')

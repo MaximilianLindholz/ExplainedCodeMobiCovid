@@ -5,12 +5,11 @@ library(tidyverse)
 data <- fread('/Users/maximilianlindholz/Final/baseinfo4.csv')
 full <- fread('/Users/maximilianlindholz/Final/pt.csv')
 
-
 # frühmobi
 frühmobi <- merge(full, data, by = 'c_pseudonym')
 frühmobi$c_date_time_to <- as.Date(frühmobi$c_date_time_to)
 frühmobi$ersteAufnahme <- as.Date(frühmobi$ersteAufnahme)
-frühmobi <- subset(frühmobi, frühmobi$c_date_time_to < frühmobi$aufn +3)
+frühmobi <- subset(frühmobi, frühmobi$c_date_time_to < frühmobi$aufn +3 & frühmobi$c_date_time_to>=frühmobi$aufn )
 frühmobi <- unique(frühmobi$c_pseudonym)
 data$frühmobi <-0
 data$frühmobi[data$c_pseudonym %in% frühmobi]<-1
@@ -149,53 +148,58 @@ data$dup[data$c_pseudonym%in%dups]<-1
 datadub <- subset(data, data$dup == 1)
 datadub <- datadub %>% select('c_pseudonym', 'norepinephrine', 'aufn', 'n','Behandlungsdauer')
 datadub <- merge(datadub, index, by = 'c_pseudonym')
-datadubmaxx <- datadub %>% group_by(index.y) %>% slice(which.max(n))
+datadubmaxx <- datadub
+
+# datadubmaxx$co5<-0
+# datadubmaxx$co5[datadubmaxx$c_pseudonym %in% unique(key5$c_pseudonym)]<-1
+# datadubmaxx$co6<-0
+# datadubmaxx$co6[datadubmaxx$c_pseudonym %in% unique(key6$c_pseudonym)]<-1
+# 
+# datadubmaxx <- datadub %>% group_by(index.y) %>% slice(which.max(n))
 take <- unique(datadubmaxx$c_pseudonym)
 toss <- data.table(unique(datadub$c_pseudonym))
 toss <- subset(toss, !(toss$V1 %in%take))
 take <- data.table(take)
+
 # cov back check because double doc was predom. in covid
 
+susb <- subset(data, data$c_pseudonym %in% c('boiesd_mobicovid_2140','boiesd_mobicovid_2038','boiesd_mobicovid_3017','boiesd_mobicovid_3309'))
 
 
-data <- subset(data, !(data$c_pseudonym %in% toss$V1))
-
-
-#Outcome (PT per day)
-data$perday <- data$n/data$Behandlungsdauer
-data$perday[is.na(data$perday)]<-0
-data <- subset(data, data$perday<3)
-# e.g. 80 per day :D 3 is the most realistic number according to professionals
-
-# Exclusionsteps start: 19706
-sum(data$n[!is.na(data$n)]) #72024
-data <- subset(data, data$Behandlungsdauer>1) # 12579
-data <- subset(data, data$age>17) # 12458
-sum(data$n[!is.na(data$n)]) #70397
+# Exclusionsteps start: 19931
+sum(data$n[!is.na(data$n)]) #73031
+data <- subset(data, data$Behandlungsdauer>2) # 10085
+data <- subset(data, data$age>17) # 10010
+sum(data$n[!is.na(data$n)]) #69444
 
 data<- subset(data, !is.na(data$medianAbsoluteRass))
 data<- subset(data, !is.na(data$admissionsofa))
-data<- subset(data, !is.na(data$admissionapache)) # 10691
-data<- subset(data, data$geschlecht %in% c("M","F", "W")) #10645
+data<- subset(data, !is.na(data$admissionapache)) # 8823
+data<- subset(data, data$geschlecht %in% c("M","F", "W")) #8790
 data<- subset(data, !is.na(data$age))
-data<- subset(data, data$age <101) # 10640
+data<- subset(data, data$age <101) # 8787
 
+data$perday <- data$n/data$Behandlungsdauer
 data$perday[is.na(data$perday)]<-0
-sum(data$n[!is.na(data$n)]) #66010
+sum(data$n[!is.na(data$n)]) #65307
 
 # sex
 data$geschlecht[data$geschlecht == "W"]<-"F"
 
-length(data$norepinephrine[data$norepinephrine==1])# 5087
-sum(data$n[!is.na(data$n)&data$norepinephrine==1]) #36624
-length(data$norepinephrine[data$norepinephrine==0]) #5553
-sum(data$n[!is.na(data$n)&data$norepinephrine==0]) #29376
-test5 <- subset(test5, test5$c_pseudonym %in% unique(data$c_pseudonym)) #2847
-length(unique(test5$c_pseudonym)) #691
+length(data$norepinephrine[data$norepinephrine==1])# 4584
+sum(data$n[!is.na(data$n)&data$norepinephrine==1]) #30545
+length(data$norepinephrine[data$norepinephrine==0]) #4734
+sum(data$n[!is.na(data$n)&data$norepinephrine==0]) #19869
+test5 <- subset(test5, test5$c_pseudonym %in% unique(data$c_pseudonym)) #3230
+length(unique(test5$c_pseudonym)) #763
+
+
+data <- subset(data, !(data$c_pseudonym %in% dups))
 
 #write part
 write.table(test5, '/Users/maximilianlindholz/Final/during.csv', sep = '|',row.names = F)
 write.table(data, '/Users/maximilianlindholz/Final/baseinfo5.csv', sep = '|',row.names = F)
+
 
 # for clara
 claratable <- data

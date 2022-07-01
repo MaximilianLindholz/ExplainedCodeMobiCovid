@@ -5,7 +5,18 @@ library(readxl)
 library(lubridate)
 library(comorbidity)
 library(bit64)
-base <- read_excel('/Users/maximilianlindholz/Final/WIDEALL.xlsx', sheet = 'Sheet1')
+base <- fread('/Users/maximilianlindholz/Final/basenew.csv')
+
+# id tabelle
+tabelle <- fread('/Users/maximilianlindholz/Final/data_vol4/cohort.csv')
+tabelle$co6_patient_id<-as.integer64(tabelle$co6_patient_id)
+
+fallnummer <- fread('/Users/maximilianlindholz/MobiCovid/co6_cohort.csv', sep = ';')
+tabelle <- merge(tabelle, fallnummer, by = 'co6_patient_id')
+tabelle <- tabelle %>% distinct()
+datum <- base %>% select('Fallnr', 'aufn','entl','stationsbezeichnung')
+tabelle <- merge(tabelle, datum, by.x = "Fallnummer", by.y = "Fallnr")
+tabelle <- tabelle %>% distinct()
 
 # base pseudonyms
 fallnummer <- fread('/Users/maximilianlindholz/MobiCovid/co6_cohort.csv', sep = ';')

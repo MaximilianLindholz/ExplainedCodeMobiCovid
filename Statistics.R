@@ -26,9 +26,19 @@ summary(data)
 str(data)
 data$Fachrichtung<-as.factor(data$Fachrichtung)
 data$geschlecht<- as.factor(data$geschlecht)
+data$obes <- as.factor(data$obes)
+data$dialyse <- as.factor(data$dialyse)
+data$ecmo <- as.factor(data$ecmo)
+data$highflow <- as.factor(data$highflow)
+data$intubated <- as.factor(data$intubated)
+data$maskedventilation <- as.factor(data$maskedventilation)
+data$tracheostomie <- as.factor(data$tracheostomie)
+
 
 # merge long and wide
 long <- merge(long, data, by = "c_pseudonym")
+
+onlypos <- subset(data, data$perday>0)
 
 # perday all
 data$perday <- sqrt(data$perday)
@@ -37,6 +47,8 @@ model1 <- lm(pdcov, data = data)
 summary(model1)
 Anova(model1, type = 3)
 confint(model1)
+
+summary(lm(perday~norepinephrine, data = data))
 
 # modelfit
 plot(model1)
