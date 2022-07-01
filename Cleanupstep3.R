@@ -86,7 +86,7 @@ rass$c_val <- abs(rass$c_val)
 rass <- rass %>% group_by(c_pseudonym,c_date_time_to) %>% summarise(c_val =median(c_val))
 rass <- rass %>% group_by(c_pseudonym) %>% summarise(c_val =median(c_val))
 data <- merge(data, rass, by = 'c_pseudonym', all.x = TRUE)
-names(data)[75]<-'medianAbsoluteRass'
+names(data)[76]<-'medianAbsoluteRass'
 
 #fachrichtung as a factor not unique column
 newfactor <- rep(NA, times=nrow(data))
@@ -98,7 +98,7 @@ newfactor[a == 1 & data$InternalMedicine==1] <- "InternalMedicine"
 newfactor[a == 1 & data$CardiacSurgery==1] <- "CardiacSurgery"
 data <- cbind(data, newfactor)
 data <- data %>% select(-c('InterdisciplinaryOperative', 'Neurocritical', 'InternalMedicine', 'CardiacSurgery'))
-names(data)[72]<-'Fachrichtung'
+names(data)[73]<-'Fachrichtung'
 
 # covid stationstyp as factor not unique column
 newfactor2 <- rep(NA, times=nrow(data))
@@ -109,7 +109,7 @@ newfactor2[a == 1 & data$Established==1] <- "Established"
 newfactor2[a == 1 & data$Surge==1] <- "Surge"
 data <- cbind(data, newfactor2)
 data <- data %>% select(-c("NonCovid","Established","Surge"))
-names(data)[70]<-'CovidStationstyp'
+names(data)[71]<-'CovidStationstyp'
 
 # merge average physiotime, a lot of missing data
 physiotime <- fread('/Users/maximilianlindholz/Final/physiotimes.csv')

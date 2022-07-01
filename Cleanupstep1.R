@@ -6,39 +6,85 @@ library(lubridate)
 library(comorbidity)
 library(bit64)
 base <- read_excel('/Users/maximilianlindholz/Final/WIDEALL.xlsx', sheet = 'Sheet1')
-base <- base %>% distinct()
 
-# identifiers cobra 6
+# base pseudonyms
 fallnummer <- fread('/Users/maximilianlindholz/MobiCovid/co6_cohort.csv', sep = ';')
 cobra6 <- subset(base,base$COBRA ==6)
-cobra6 <-merge(cobra6, fallnummer, by.x = 'Fallnr', by.y = 'Fallnummer')
-
-# to ensure, that there is a clear identification, one pseudonym may have multiple co6 or co5 ids, however, no co6/5 id can have multiple pseudonyms, otherwise we create duplicates, given that these entrys might be faulty, we remove them completly 
 key6 <- fread('/Users/maximilianlindholz/Final/data_vol4/cohort 2.csv')
-cobra6 <- merge(cobra6, key6,by = 'co6_patient_id')
-cobra6 <- cobra6 %>% select('Fallnr','stationsbezeichnung','geschlecht', 'aufn','entl','Behandlungsdauer', 'COBRA','c_vstring', 'c_pseudonym')
-index <- cobra6 %>% select('aufn', 'Fallnr')
-index <- index %>% distinct()
-index$index <- 1:10088
-cobra6 <- merge(cobra6, index, by = c('aufn', 'Fallnr'))
+key <- merge(fallnummer, key6, by = 'co6_patient_id')
+key <- key %>% select('Fallnummer','c_pseudonym')
+key <- key %>% distinct()
 
-# identifiers cobra 5
 cobra5 <- subset(base,base$COBRA ==5)
-key5 <- fread('/Users/maximilianlindholz/MobiCovid/Cobra5/cohort-copra5.csv')
+key5 <- fread('/Users/maximilianlindholz/MobiCovid/Cobra5/co5_cohort.csv')
 key5 <- key5 %>% na.omit()
 key5 <- key5 %>% distinct()
-cobra5 <- merge(cobra5, key5, by = "co5_dat_id")
-cobra5 <- cobra5 %>% select('Fallnr','stationsbezeichnung','geschlecht', 'aufn','entl','Behandlungsdauer', 'COBRA','c_vstring', 'c_pseudonym')
-index2 <- cobra5 %>% select('aufn', 'Fallnr')
+fallnummer5 <- fread('/Users/maximilianlindholz/MobiCovid/Cobra5/cohort-copra5.csv')
+fallnummer5 <- fallnummer5 %>% na.omit()
+key5 <- merge(key5, fallnummer5, by = 'co5_dat_id')
+key5 <- key5 %>% select('c_pseudonym','Fallnummer')
+
+universalkey <- rbind(key,key5)
+universalkey <- universalkey %>% distinct()
+
+# now key 5 is the identifier of pseudonym // a bit confusing, but thats ok
+key5 <- fallnummer5
+
+index <- universalkey %>% select('Fallnummer')
+index <- index %>% distinct()
+index$index <- 1:33039
+universalkey <- merge(universalkey, index, by = "Fallnummer")
+
+base <- merge(base, universalkey, by.y = 'Fallnummer', by.x = "Fallnr")
+index2 <- base %>% select('aufn', 'Fallnr', 'stationsbezeichnung')
 index2 <- index2 %>% distinct()
-index2$index <- 10089:30142
-cobra5 <- merge(cobra5, index2, by = c('aufn', 'Fallnr'))
+index2$index <-1:30213
+base <- merge(base, index2, by = c('aufn', 'Fallnr', 'stationsbezeichnung'))
+base <- base %>% select(-c('index.x'))
 
-# base
-base <- rbind(cobra5, cobra6)
-
-# same index means same case => Duplicates that i will merge later
-index <- base %>% select('index', 'c_pseudonym')
+indexthing <- base
+# # identifiers cobra 6
+# fallnummer <- fread('/Users/maximilianlindholz/MobiCovid/co6_cohort.csv', sep = ';')
+# cobra6 <- subset(base,base$COBRA ==6)
+# cobra6 <-merge(cobra6, fallnummer, by.x = 'Fallnr', by.y = 'Fallnummer')
+# 
+# # to ensure, that there is a clear identification, one pseudonym may have multiple co6 or co5 ids, however, no co6/5 id can have multiple pseudonyms, otherwise we create duplicates, given that these entrys might be faulty, we remove them completly 
+# key6 <- fread('/Users/maximilianlindholz/Final/data_vol4/cohort 2.csv')
+# cobra6 <- merge(cobra6, key6,by = 'co6_patient_id')
+# cobra6 <- cobra6 %>% select('Fallnr','stationsbezeichnung','geschlecht', 'aufn','entl','Behandlungsdauer', 'COBRA','c_vstring', 'c_pseudonym')
+# index <- cobra6 %>% select('aufn', 'Fallnr')
+# index <- index %>% distinct()
+# index$index <- 1:10088
+# cobra6 <- merge(cobra6, index, by = c('aufn', 'Fallnr'))
+# 
+# 
+# key <- merge(fallnummer, key6, by = 'co6_patient_id')
+# key <- key %>% select('Fallnummer','c_pseudonym')
+# key <- key %>% distinct()
+# 
+# # identifiers cobra 5
+# cobra5 <- subset(base,base$COBRA ==5)
+# key5 <- fread('/Users/maximilianlindholz/MobiCovid/Cobra5/cohort-copra5.csv')
+# key5 <- key5 %>% na.omit()
+# key5 <- key5 %>% distinct()
+# fallnummer5 <- fread('/Users/maximilianlindholz/MobiCovid/Cobra5/cohort-copra5.csv')
+# fallnummer5 <- na.omit()
+# key5 <- merge(key5, fallnummer5, by = 'co5_dat_id')
+# 
+# 
+# cobra5 <- merge(cobra5, key5, by = "co5_dat_id")
+# cobra5 <- cobra5 %>% select('Fallnr','stationsbezeichnung','geschlecht', 'aufn','entl','Behandlungsdauer', 'COBRA','c_vstring', 'c_pseudonym')
+# index2 <- cobra5 %>% select('aufn', 'Fallnr')
+# index2 <- index2 %>% distinct()
+# index2$index <- 10089:30142
+# cobra5 <- merge(cobra5, index2, by = c('aufn', 'Fallnr'))
+# 
+# key2 <- merge(key5)
+# # base
+# base <- rbind(cobra5, cobra6)
+# 
+# # same index means same case => Duplicates that i will merge later
+# index <- base %>% select('index', 'c_pseudonym')
 
 # remove duplicates
 base <- base %>% distinct(aufn, c_pseudonym,.keep_all = TRUE)
@@ -260,7 +306,7 @@ data$tracheostomie <-0
 data$tracheostomie[data$c_pseudonym %in% tracheostomie]<-1
 
 # physio
-data$index <- 1:23622
+data$index <- 1:24145
 full <- fread('/Users/maximilianlindholz/Final/physiotextelabeled.csv')
 full <- full %>% select('c_val','c_dat_id','co6_patient_id','c_date_time_to', 'IMS')
 
@@ -314,7 +360,7 @@ data <- data %>% select(-c('one'))
 # used for the long analysis, names solution is not pretty I know
 names(full)[6]<-'exacttime'
 
-write.table(index, '/Users/maximilianlindholz/Final/index.csv', sep = '|', row.names = FALSE) 
+write.table(indexthing, '/Users/maximilianlindholz/Final/index.csv', sep = '|', row.names = FALSE) 
 write.table(data, '/Users/maximilianlindholz/Final/baseinfo.csv', sep = '|', row.names = FALSE)
 write.table(full, '/Users/maximilianlindholz/Final/pt.csv', sep = '|',row.names = F)
 write.table(key5, '/Users/maximilianlindholz/Final/key5.csv', sep = '|',row.names = F)

@@ -5,6 +5,16 @@ library(tidyverse)
 data <- fread('/Users/maximilianlindholz/Final/baseinfo4.csv')
 full <- fread('/Users/maximilianlindholz/Final/pt.csv')
 
+
+# frühmobi
+frühmobi <- merge(full, data, by = 'c_pseudonym')
+frühmobi$c_date_time_to <- as.Date(frühmobi$c_date_time_to)
+frühmobi$ersteAufnahme <- as.Date(frühmobi$ersteAufnahme)
+frühmobi <- subset(frühmobi, frühmobi$c_date_time_to < frühmobi$aufn +3)
+frühmobi <- unique(frühmobi$c_pseudonym)
+data$frühmobi <-0
+data$frühmobi[data$c_pseudonym %in% frühmobi]<-1
+
 # key
 key5 <- fread('/Users/maximilianlindholz/Final/key5.csv')
 key6 <- fread('/Users/maximilianlindholz/Final/key6.csv')
@@ -45,7 +55,7 @@ test <- dt[, list(c_pseudonym,length, c_rate,c_application_start,c_application_e
 test$date<-as.Date(test$date)
 
 # index to remove duplicates later, time to posict
-full$index <- 1:80670
+full$index <- 1:81529
 # calc for flow chart I rest below
 # calc <- full
 full$exacttime <- chartr('.', '-', full$exacttime)
@@ -94,7 +104,7 @@ rass$c_val<- abs(rass$c_val)
 
 # merge rass and long
 long$c_date_time_to<-as.Date(long$c_date_time_to)
-long$index <- 1:4938
+long$index <- 1:4937
 test4 <- merge(long, rass, by.x = c('c_pseudonym','c_date_time_to'), by.y = c('c_pseudonym','date'))
 test4 <- subset(test4, test4$c_datum_fuer_wann <= test4$exacttime)
 test5 <- test4 %>% arrange(desc(c_val.y)) %>%filter(duplicated(index) == FALSE)
@@ -128,50 +138,68 @@ covid <- covid %>% distinct()
 data$covid <- 0
 data$covid[data$c_pseudonym %in% covid$c_pseudonym]<-1
 
-# if patient was documented multiple times, take longest continous documentation
-test <- fread('/Users/maximilianlindholz/Final/index.csv')
-test3 <- data %>% group_by(index, aufn) %>% filter(HospLOS==max(HospLOS))
-data <- test3
+# duplicate check from cleanupstep 1, always take the duplicate with most pt entrys documented
+index <- fread('/Users/maximilianlindholz/Final/index.csv')
+index <- index %>% select('c_pseudonym', 'index.y')
+index <- index %>% distinct()
+dups <-index[duplicated(index$index.y)|duplicated(index$index.y, fromLast=TRUE),]
+dups <- unique(dups$c_pseudonym)
+data$dup <- 0
+data$dup[data$c_pseudonym%in%dups]<-1
+datadub <- subset(data, data$dup == 1)
+datadub <- datadub %>% select('c_pseudonym', 'norepinephrine', 'aufn', 'n','Behandlungsdauer')
+datadub <- merge(datadub, index, by = 'c_pseudonym')
+datadubmaxx <- datadub %>% group_by(index.y) %>% slice(which.max(n))
+take <- unique(datadubmaxx$c_pseudonym)
+toss <- data.table(unique(datadub$c_pseudonym))
+toss <- subset(toss, !(toss$V1 %in%take))
+take <- data.table(take)
+# cov back check because double doc was predom. in covid
+
+
+
+data <- subset(data, !(data$c_pseudonym %in% toss$V1))
+
 
 #Outcome (PT per day)
 data$perday <- data$n/data$Behandlungsdauer
+data$perday[is.na(data$perday)]<-0
+data <- subset(data, data$perday<3)
+# e.g. 80 per day :D 3 is the most realistic number according to professionals
 
-# frühmobi
-frühmobi <- merge(full, data, by = 'c_pseudonym')
-frühmobi$c_date_time_to <- as.Date(frühmobi$c_date_time_to)
-frühmobi$ersteAufnahme <- as.Date(frühmobi$ersteAufnahme)
-frühmobi <- subset(frühmobi, frühmobi$c_date_time_to < frühmobi$aufn +3)
-frühmobi <- unique(frühmobi$c_pseudonym)
-data$frühmobi <-0
-data$frühmobi[data$c_pseudonym %in% frühmobi]<-1
+# Exclusionsteps start: 19706
+sum(data$n[!is.na(data$n)]) #72024
+data <- subset(data, data$Behandlungsdauer>1) # 12579
+data <- subset(data, data$age>17) # 12458
+sum(data$n[!is.na(data$n)]) #70397
 
-# Exclusionsteps start: 23586, 80670 physioeinheiten
-data <- subset(data, data$Behandlungsdauer>2)
-data <- subset(data, data$age>17)
-sum(data$n[!is.na(data$n)]) #76437
-# 11864
 data<- subset(data, !is.na(data$medianAbsoluteRass))
 data<- subset(data, !is.na(data$admissionsofa))
-data<- subset(data, !is.na(data$admissionapache))
-data<- subset(data, data$geschlecht %in% c("M","F", "W"))
+data<- subset(data, !is.na(data$admissionapache)) # 10691
+data<- subset(data, data$geschlecht %in% c("M","F", "W")) #10645
 data<- subset(data, !is.na(data$age))
-data<- subset(data, data$age <101)
-# 10424
+data<- subset(data, data$age <101) # 10640
+
 data$perday[is.na(data$perday)]<-0
-sum(data$n[!is.na(data$n)]) #71714
+sum(data$n[!is.na(data$n)]) #66010
 
 # sex
 data$geschlecht[data$geschlecht == "W"]<-"F"
 
-length(data$norepinephrine[data$norepinephrine==1])# 4824
-sum(data$n[!is.na(data$n)&data$norepinephrine==1]) #38840
-length(data$norepinephrine[data$norepinephrine==0]) #5601
-sum(data$n[!is.na(data$n)&data$norepinephrine==0]) #32874
-
-test5 <- subset(test5, test5$c_pseudonym %in% unique(data$c_pseudonym))
-length(unique(test5$c_pseudonym)) #3187
+length(data$norepinephrine[data$norepinephrine==1])# 5087
+sum(data$n[!is.na(data$n)&data$norepinephrine==1]) #36624
+length(data$norepinephrine[data$norepinephrine==0]) #5553
+sum(data$n[!is.na(data$n)&data$norepinephrine==0]) #29376
+test5 <- subset(test5, test5$c_pseudonym %in% unique(data$c_pseudonym)) #2847
+length(unique(test5$c_pseudonym)) #691
 
 #write part
 write.table(test5, '/Users/maximilianlindholz/Final/during.csv', sep = '|',row.names = F)
 write.table(data, '/Users/maximilianlindholz/Final/baseinfo5.csv', sep = '|',row.names = F)
+
+# for clara
+claratable <- data
+claratable[is.na(claratable)]<- 999
+claratable <- claratable %>% select(-c('index','c_bewty.x', 'c_bwart.x',  'c_bwedt.x', 'c_bewty.y', 'c_bwart.y',  'c_bwedt.y','dup'))
+write.table(data, '/Users/maximilianlindholz/Final/clara999.csv', sep = '|',row.names = F)
 

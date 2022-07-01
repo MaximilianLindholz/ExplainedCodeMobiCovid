@@ -13,16 +13,16 @@ myVars <- c("age","Elixhauser","admissionapache", "admissionsofa", "meanAbsolute
 
 ## Vector of categorical variables that need transformation
 catVars <- c( "obes","dialyse", "ecmo", "highflow", 
-             "intubated", "maskedventilation", "tracheostomie","prone")
+             "intubated", "maskedventilation", "tracheostomie","covid")
 
 data <- data.frame(data)
 data[,catVars] <- sapply(data[,catVars],function(x) ifelse(x==1,"yes","no"))
 
 # mulit means patient was on multiple wards with different attending specialties
-data$Fachrichtung[data$Fachrichtung=="multi"]<-"Multiple Wards and Specialties"
+data$Fachrichtung[data$Fachrichtung=="multi"]<-"Multiple Specialties"
 ## Create a TableOne object
 tab1 <- CreateTableOne(vars = c("age","Elixhauser","admissionapache", "admissionsofa", "meanAbsoluteRass","geschlecht", "obes","dialyse", "ecmo", "highflow", 
-                                "intubated", "maskedventilation", "tracheostomie","prone","Fachrichtung"), strata = "norepinephrine", 
+                                "intubated", "maskedventilation", "tracheostomie","Fachrichtung", "covid"), strata = "norepinephrine", 
                        data = data, factorVars = c("geschlecht", "obes","dialyse", "ecmo", "highflow", 
                                                    "intubated", "maskedventilation", "tracheostomie","prone","Fachrichtung"))
 print(tab1, showAllLevels = TRUE)
