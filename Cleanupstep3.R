@@ -32,11 +32,13 @@ apache <- rbind(apache5, apache6)
 # create check variable
 check <- data %>% select('c_pseudonym', 'aufn','entl')
 apache <- merge(apache, check, by = 'c_pseudonym')
+apache$aufn <- as.Date(apache$aufn)
+apache$entl <- as.Date(apache$entl)
 apache <- subset(apache, apache$c_datum_fure_wann >= apache$aufn & apache$c_datum_fure_wann<= apache$entl)
 
 # get first/admission apache by id, assuming that everyone does the mandatory admission exam (hard to define it in another way)
+apache <- subset(apache, apache$c_gesamtscore < 72) # clearly wrong entrys with  e.g. 80000, apache only goes to 69
 apache <- apache %>% arrange(c_datum_fure_wann)%>% group_by(c_pseudonym) %>% summarise_at('c_gesamtscore', first)
-apache <- subset(apache, apache$c_gesamtscore < 70) # clearly wrong entrys with  e.g. 80000, apache only goes to 69
 names(apache)[2]<-'admissionapache'
 data <- merge(data, apache, by = 'c_pseudonym', all.x = TRUE)
 
@@ -55,11 +57,13 @@ names(sofa6)[2]<-'c_datum_fure_wann'
 sofa6$c_datum_fure_wann<-as.Date(sofa6$c_datum_fure_wann)
 sofa <- rbind(sofa, sofa6)
 sofa <- merge(sofa, check, by = 'c_pseudonym')
+sofa$aufn <- as.Date(sofa$aufn)
+sofa$entl <- as.Date(sofa$entl)
 sofa <- subset(sofa, sofa$c_datum_fure_wann >= sofa$aufn & sofa$c_datum_fure_wann<= sofa$entl)
 
 # get first apache by id (same assumption as above)
-sofa <- sofa %>% arrange(c_datum_fure_wann)%>% group_by(c_pseudonym) %>% summarise_at('c_gesamtscore', first)
 sofa <- subset(sofa, sofa$c_gesamtscore < 25)
+sofa <- sofa %>% arrange(c_datum_fure_wann)%>% group_by(c_pseudonym) %>% summarise_at('c_gesamtscore', first)
 names(sofa)[2]<-'admissionsofa'
 data <- merge(data, sofa, by = 'c_pseudonym', all.x = TRUE)
 
@@ -86,7 +90,7 @@ rass$c_val <- abs(rass$c_val)
 rass <- rass %>% group_by(c_pseudonym,c_date_time_to) %>% summarise(c_val =median(c_val))
 rass <- rass %>% group_by(c_pseudonym) %>% summarise(c_val =median(c_val))
 data <- merge(data, rass, by = 'c_pseudonym', all.x = TRUE)
-names(data)[76]<-'medianAbsoluteRass'
+names(data)[75]<-'medianAbsoluteRass'
 
 #fachrichtung as a factor not unique column
 newfactor <- rep(NA, times=nrow(data))
@@ -98,7 +102,7 @@ newfactor[a == 1 & data$InternalMedicine==1] <- "InternalMedicine"
 newfactor[a == 1 & data$CardiacSurgery==1] <- "CardiacSurgery"
 data <- cbind(data, newfactor)
 data <- data %>% select(-c('InterdisciplinaryOperative', 'Neurocritical', 'InternalMedicine', 'CardiacSurgery'))
-names(data)[73]<-'Fachrichtung'
+names(data)[72]<-'Fachrichtung'
 
 # covid stationstyp as factor not unique column
 newfactor2 <- rep(NA, times=nrow(data))
@@ -109,7 +113,7 @@ newfactor2[a == 1 & data$Established==1] <- "Established"
 newfactor2[a == 1 & data$Surge==1] <- "Surge"
 data <- cbind(data, newfactor2)
 data <- data %>% select(-c("NonCovid","Established","Surge"))
-names(data)[71]<-'CovidStationstyp'
+names(data)[70]<-'CovidStationstyp'
 
 # merge average physiotime, a lot of missing data
 physiotime <- fread('/Users/maximilianlindholz/Final/physiotimes.csv')

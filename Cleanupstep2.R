@@ -5,6 +5,9 @@ library(tidyverse)
 data <- fread('/Users/maximilianlindholz/Final/baseinfo.csv')
 full <- fread('/Users/maximilianlindholz/Final/pt.csv')
 
+data$aufn <- as.Date(data$aufn)
+data$entl <- as.Date(data$entl)
+
 # Prone
 # Prone 6
 prone <- read.csv('/Applications/CO6_Data_String.csv', sep ='|')

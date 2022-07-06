@@ -7,120 +7,13 @@ library(comorbidity)
 library(bit64)
 base <- fread('/Users/maximilianlindholz/Final/basenew.csv')
 
-# id tabelle
-tabelle <- fread('/Users/maximilianlindholz/Final/data_vol4/cohort.csv')
-tabelle$co6_patient_id<-as.integer64(tabelle$co6_patient_id)
-
-fallnummer <- fread('/Users/maximilianlindholz/MobiCovid/co6_cohort.csv', sep = ';')
-tabelle <- merge(tabelle, fallnummer, by = 'co6_patient_id')
-tabelle <- tabelle %>% distinct()
-datum <- base %>% select('Fallnr', 'aufn','entl','stationsbezeichnung')
-tabelle <- merge(tabelle, datum, by.x = "Fallnummer", by.y = "Fallnr")
-tabelle <- tabelle %>% distinct()
-
-# base pseudonyms
-fallnummer <- fread('/Users/maximilianlindholz/MobiCovid/co6_cohort.csv', sep = ';')
-cobra6 <- subset(base,base$COBRA ==6)
-key6 <- fread('/Users/maximilianlindholz/Final/data_vol4/cohort 2.csv')
-key <- merge(fallnummer, key6, by = 'co6_patient_id')
-key <- key %>% select('Fallnummer','c_pseudonym')
-key <- key %>% distinct()
-
-cobra5 <- subset(base,base$COBRA ==5)
-key5 <- fread('/Users/maximilianlindholz/MobiCovid/Cobra5/co5_cohort.csv')
-key5 <- key5 %>% na.omit()
+# calculate time of treatment
+base$Behandlungsdauer <- difftime(base$entl,base$aufn, units = c("days"))
+base$Behandlungsdauer <- as.double(base$Behandlungsdauer)
+key6 <- base %>% select('c_pseudonym', 'co6_patient_id')
+key6 <- key6 %>% distinct()
+key5 <- base %>% select('c_pseudonym', 'co5_dat_id')
 key5 <- key5 %>% distinct()
-fallnummer5 <- fread('/Users/maximilianlindholz/MobiCovid/Cobra5/cohort-copra5.csv')
-fallnummer5 <- fallnummer5 %>% na.omit()
-key5 <- merge(key5, fallnummer5, by = 'co5_dat_id')
-key5 <- key5 %>% select('c_pseudonym','Fallnummer')
-
-universalkey <- rbind(key,key5)
-universalkey <- universalkey %>% distinct()
-
-# now key 5 is the identifier of pseudonym // a bit confusing, but thats ok
-key5 <- fallnummer5
-
-index <- universalkey %>% select('Fallnummer')
-index <- index %>% distinct()
-index$index <- 1:33039
-universalkey <- merge(universalkey, index, by = "Fallnummer")
-
-base <- merge(base, universalkey, by.y = 'Fallnummer', by.x = "Fallnr")
-index2 <- base %>% select('aufn', 'Fallnr', 'stationsbezeichnung')
-index2 <- index2 %>% distinct()
-index2$index <-1:30213
-base <- merge(base, index2, by = c('aufn', 'Fallnr', 'stationsbezeichnung'))
-base <- base %>% select(-c('index.x'))
-
-indexthing <- base
-# # identifiers cobra 6
-# fallnummer <- fread('/Users/maximilianlindholz/MobiCovid/co6_cohort.csv', sep = ';')
-# cobra6 <- subset(base,base$COBRA ==6)
-# cobra6 <-merge(cobra6, fallnummer, by.x = 'Fallnr', by.y = 'Fallnummer')
-# 
-# # to ensure, that there is a clear identification, one pseudonym may have multiple co6 or co5 ids, however, no co6/5 id can have multiple pseudonyms, otherwise we create duplicates, given that these entrys might be faulty, we remove them completly 
-# key6 <- fread('/Users/maximilianlindholz/Final/data_vol4/cohort 2.csv')
-# cobra6 <- merge(cobra6, key6,by = 'co6_patient_id')
-# cobra6 <- cobra6 %>% select('Fallnr','stationsbezeichnung','geschlecht', 'aufn','entl','Behandlungsdauer', 'COBRA','c_vstring', 'c_pseudonym')
-# index <- cobra6 %>% select('aufn', 'Fallnr')
-# index <- index %>% distinct()
-# index$index <- 1:10088
-# cobra6 <- merge(cobra6, index, by = c('aufn', 'Fallnr'))
-# 
-# 
-# key <- merge(fallnummer, key6, by = 'co6_patient_id')
-# key <- key %>% select('Fallnummer','c_pseudonym')
-# key <- key %>% distinct()
-# 
-# # identifiers cobra 5
-# cobra5 <- subset(base,base$COBRA ==5)
-# key5 <- fread('/Users/maximilianlindholz/MobiCovid/Cobra5/cohort-copra5.csv')
-# key5 <- key5 %>% na.omit()
-# key5 <- key5 %>% distinct()
-# fallnummer5 <- fread('/Users/maximilianlindholz/MobiCovid/Cobra5/cohort-copra5.csv')
-# fallnummer5 <- na.omit()
-# key5 <- merge(key5, fallnummer5, by = 'co5_dat_id')
-# 
-# 
-# cobra5 <- merge(cobra5, key5, by = "co5_dat_id")
-# cobra5 <- cobra5 %>% select('Fallnr','stationsbezeichnung','geschlecht', 'aufn','entl','Behandlungsdauer', 'COBRA','c_vstring', 'c_pseudonym')
-# index2 <- cobra5 %>% select('aufn', 'Fallnr')
-# index2 <- index2 %>% distinct()
-# index2$index <- 10089:30142
-# cobra5 <- merge(cobra5, index2, by = c('aufn', 'Fallnr'))
-# 
-# key2 <- merge(key5)
-# # base
-# base <- rbind(cobra5, cobra6)
-# 
-# # same index means same case => Duplicates that i will merge later
-# index <- base %>% select('index', 'c_pseudonym')
-
-# remove duplicates
-base <- base %>% distinct(aufn, c_pseudonym,.keep_all = TRUE)
-base <- subset(base, !is.na(base$aufn))
-base <- subset(base, !is.na(base$entl))
-
-# # Avoid overlapping, when filtering, given that Cobra6 has days as admission date without Hours, Minutes, Seconds, whereas Cobra 5 does 
-base$aufn <- base$aufn + 60*60
-base$aufn[base$COBRA==6]<-base$aufn[base$COBRA==6] + (60*60*22)+(59*60)
-
-# remove cases, where in Cobra 5 e.g. 2 days were also documented, that were part of a larger admission, that was documented in Cobra 6, (e.g. PN3)
-base$interval1 <- interval(base$aufn, base$entl)
-base$aufn <- as.Date(base$aufn)
-base$entl <- as.Date(base$entl)
-base <- base %>% distinct(aufn, c_pseudonym, .keep_all = TRUE)
-test <- base %>% group_by(c_pseudonym) %>% arrange(int_start(interval1), .by_group = TRUE) %>% mutate(overlap2 = map_int(interval1, ~ sum(int_overlaps(.x, interval1))) > 1)
-
-# now split into clean data and data with overlap
-base1 <- subset(test, test$overlap2 == FALSE)
-base2 <- subset(test, test$overlap2 == TRUE)
-
-# if there is duplicates, take the longer timeframe and toss the other one
-base2 <- base2 %>% group_by(c_pseudonym) %>% filter(Behandlungsdauer == max(Behandlungsdauer))
-base <- rbind(base1, base2)
-base <- base %>% select(-c('interval1','overlap2'))
 
 # age from sap
 sappat <- read.csv2('/Users/maximilianlindholz/MobiCovid/sap_patient.csv', sep = '|')
@@ -131,18 +24,23 @@ sappat <- distinct(sappat)
 # bday
 base <- merge(base, sappat, by.x = 'c_pseudonym' , by.y = 'c_pseudonym', all.x = TRUE)
 base$age <- trunc((base$c_gbdat %--% base$aufn) / years(1))
-base$age[is.na(base$age)]<- base$c_vstring[is.na(base$age)]
 
 # drop other age stuff
-base <- base %>% select(-c('c_vstring','c_gbdat'))
+base <- base %>% select(-c('c_gbdat'))
 
-# diagnosen
+# Elixhauser at admission
 diagnosen <- fread('/Users/maximilianlindholz/MobiCovid/sap_diagnoses.csv', sep = '|', colClasses = rep('character', 63)) 
 diagnosen <- diagnosen%>%select('c_pseudonym', 'c_dkey1', 'c_diadt')
 diagnosen <- diagnosen %>% distinct(c_pseudonym, c_dkey1, .keep_all = TRUE)
+check <- base %>% select('aufn', 'c_pseudonym')
+diagnosen <- merge(diagnosen, check, by = 'c_pseudonym', allow.cartesian = T)
+diagnosen$c_diadt <- ymd(diagnosen$c_diadt)
+diagnosen$aufn<-as.Date(diagnosen$aufn)
+diagnosen <- subset(diagnosen, diagnosen$c_diadt<= diagnosen$aufn)
 charlson <- comorbidity(diagnosen,id = 'c_pseudonym', code = 'c_dkey1', map = "elixhauser_icd10_quan", assign0 = T)
 charlson$Elixhauser <- score(charlson, weights = 'swiss', assign0 = TRUE)
-base <- merge(base, charlson, by = 'c_pseudonym')
+base <- merge(base, charlson, by = 'c_pseudonym', all.x = T)
+base[,10:42][is.na(base[,10:42])]<-0
 
 # weight
 # co6 gewicht
@@ -169,8 +67,11 @@ gewicht$Gewicht <- as.integer(gewicht$Gewicht)
 gewicht <- aggregate(Gewicht~c_pseudonym,data = gewicht, mean,na.rm=T)
 base <- merge(base, gewicht, by = 'c_pseudonym', all.x = TRUE)
 
+# entry 44000 und 70000 kg => sicher fehler sowohl in gramm als auch kilogramm :D
+base$Gewicht[base$Gewicht>250]<-NA
+
 #cleanup of wards that are not part of our scope (e.g. non-ICU, that mistakenly was extracted)
-base <- subset(base, !base$stationsbezeichnung %in% c("WAN-PACU", "MPACU", "W50", "M149A","W41","M147I")) # 20891
+base <- subset(base, !base$stationsbezeichnung %in% c("WAN-PACU", "MPACU", "W50", "M149A","W41","M147I")) # 21491
 
 # Cleanup of wards 
 base$stationsbezeichnung[base$stationsbezeichnung == "W9I"] <- "9i"  
@@ -193,14 +94,15 @@ base$fachrichtung[base$stationsbezeichnung %in% c( "W1I")]<- "CardiacSurgery"
 # Resp. and Circ. Support, further down i check whether the service was provided during ICU-Admission
 ops <- fread('/Users/maximilianlindholz/MobiCovid/sap_ops.csv')
 ops <- ops %>% select('c_pseudonym', 'c_icpml', 'c_bgdop', 'c_timestamp_')
-library(lubridate)
 
-# cleanup of weird date-structure
+# cleanup of weird date-structure 
 ops$c_timestamp_ <- substr(ops$c_timestamp_, start = 1, stop = 8)
 ops$c_timestamp_ <-ymd(ops$c_timestamp_) 
 ops$short <- substr(ops$c_icpml, start=1, stop=5)
 ops$longer <- substr(ops$c_icpml, start = 1, stop = 7)
-
+ops <- merge(ops, check, by = 'c_pseudonym', allow.cartesian = T)
+ops$aufn <- as.Date(ops$aufn)
+ops <- subset(ops, ops$c_timestamp_ >= ops$aufn)
 # ECMO all starting with 8-852
 ecmo <- subset(ops, ops$short=='8-852')
 ecmo <- ecmo %>% select('c_pseudonym', 'c_timestamp_')
@@ -225,6 +127,54 @@ maskedventilation <- maskedventilation %>% select('c_pseudonym', 'c_timestamp_')
 highflow <- subset(ops, ops$short == '8-713')
 highflow <- highflow %>% select('c_pseudonym', 'c_timestamp_')
 
+# physio
+base$index <- 1:27906
+full <- fread('/Users/maximilianlindholz/Final/physiotextelabeled.csv')
+full <- full %>% select('c_val','c_dat_id','co6_patient_id','c_date_time_to', 'IMS')
+
+# split into 5 and 6 documentation parts
+full5 <- subset(full, !is.na(full$c_dat_id))
+full6 <- subset(full, is.na(full$c_dat_id))
+full5 <- subset(full5, full5$c_dat_id != "")
+full5$c_dat_id<-as.integer64(full5$c_dat_id)
+full5 <- subset(full5, full5$c_dat_id > 200000)
+full5 <- merge(full5, key5, by.x = 'c_dat_id', by.y = 'co5_dat_id')
+full5 <- full5 %>% select('c_pseudonym', 'IMS', 'c_date_time_to', 'c_val')
+
+full6 <- full6 %>% select('IMS', 'c_date_time_to', 'c_val', 'co6_patient_id')
+full6 <-  full6[!(is.na(full6$co6_patient_id) | full6$co6_patient_id==""), ]
+full6 <-  full6[!(is.na(full6$co6_patient_id) | full6$c_val==""), ]
+full6$co6_patient_id<-as.integer64(full6$co6_patient_id)
+full6 <- merge(full6, key6, by = 'co6_patient_id')
+full6 <- full6 %>% select('c_pseudonym', 'IMS', 'c_date_time_to','c_val')
+full <- rbind(full5,full6) 
+
+# counting variable
+full$IMS<- as.integer(full$IMS)
+full$one <- 1
+
+# remove pt thats not related to the stay
+time <- base %>% select('c_pseudonym', 'aufn','entl')
+safe <-full
+full <- merge(full, time, by = 'c_pseudonym', allow.cartesian = T)
+full$controll <- full$c_date_time_to
+full$c_date_time_to<-sub(" .*", "", full$c_date_time_to)
+full$c_date_time_to <- dmy(full$c_date_time_to)
+full$aufn <- as.Date(full$aufn)
+full$entl <- as.Date(full$entl)
+full <- subset(full, full$c_date_time_to >= full$aufn & full$c_date_time_to <= full$entl)
+
+# now remove unnecessary columns during the relevant stay
+full <- full %>% select(-c('aufn','entl'))
+full <- full %>% distinct()
+a <- full %>% group_by(c_pseudonym) %>% count(one)
+
+# summarize data per patient (Max and Min is for another analysis with the same data, for my analysis I use the long format data)
+count <- a 
+MaxIMS <-full %>% group_by(c_pseudonym) %>% summarise(max = max(IMS, na.rm=TRUE))
+MinIMS <- full %>% group_by(c_pseudonym) %>% summarise(min = min(IMS, na.rm=TRUE))
+# this will merge later down
+
 # create one value for each participant with value from start of treatment
 data <- base
 frame <- data[!duplicated(data$c_pseudonym), ] %>% dplyr::select('c_pseudonym','geschlecht')
@@ -236,7 +186,9 @@ stationstypen <- stationstypen %>% pivot_wider(names_from = stationsbezeichnung,
 stationstypen[is.na(stationstypen)]<-0
 
 # Length of Stay in ICU 
-behdauer <- data %>% group_by(c_pseudonym) %>% summarise_at("Behandlungsdauer", sum, na.rm = TRUE)
+behdauerframes <- data %>% select('c_pseudonym', 'stationsbezeichnung', 'Behandlungsdauer')
+behdauerframes <- behdauerframes %>% distinct()
+behdauer <- behdauerframes %>% group_by(c_pseudonym) %>% summarise_at("Behandlungsdauer", sum, na.rm = TRUE)
 
 # type of wards
 stationstyp <- data %>% group_by(c_pseudonym) %>% summarize(Stationstyp = unique(Stationstyp))
@@ -251,6 +203,7 @@ entl <- data %>% group_by(c_pseudonym) %>% summarise_at('entl', max, na.rm = TRU
 aufnahmevales <- data %>%arrange(aufn)%>% group_by(c_pseudonym) %>% summarise_at(c('age','chf', 'carit', 'valv', 'pcd', 'pvd', 'hypunc', 'hypc', 'para', 'ond', 'cpd', 'diabunc', 'diabc',
                                                                                    'hypothy', 'rf', 'ld', 'pud', 'aids', 'lymph', 'metacanc','solidtum', 'rheumd', 'coag', 'obes', 'wloss', 
                                                                                    'fed', 'blane', 'dane', 'alcohol', 'drug', 'psycho', 'depre','Elixhauser','Gewicht'), first)
+
 
 #fachrichtung
 fachrichtung <- data %>% group_by(c_pseudonym) %>% summarize(fachrichtung = unique(fachrichtung))
@@ -268,6 +221,8 @@ data <- merge(data, stationstyp, by = 'c_pseudonym', all.x = TRUE)
 
 # now add support variables, checking for whether it was during ICU-Stay
 check <- data %>% dplyr::select('c_pseudonym','aufn','entl')
+check$aufn <- as.Date(check$aufn)
+check$entl <- as.Date(check$entl)
 check2 <- merge(check, ecmo, by = 'c_pseudonym', all.x = TRUE)
 check2 <- subset(check2, !is.na(check2$c_timestamp_))
 check2 <- subset(check2, check2$c_timestamp_ >= check2$aufn & check2$c_timestamp_ <= check2$entl)
@@ -316,52 +271,6 @@ data$maskedventilation[data$c_pseudonym %in% maskedventilation]<-1
 data$tracheostomie <-0
 data$tracheostomie[data$c_pseudonym %in% tracheostomie]<-1
 
-# physio
-data$index <- 1:24145
-full <- fread('/Users/maximilianlindholz/Final/physiotextelabeled.csv')
-full <- full %>% select('c_val','c_dat_id','co6_patient_id','c_date_time_to', 'IMS')
-
-# split into 5 and 6 documentation parts
-full5 <- subset(full, !is.na(full$c_dat_id))
-full6 <- subset(full, is.na(full$c_dat_id))
-full5 <- subset(full5, full5$c_dat_id != "")
-full5$c_dat_id<-as.integer(full5$c_dat_id)
-full5 <- subset(full5, full5$c_dat_id > 200000)
-full5 <- merge(full5, key5, by.x = 'c_dat_id', by.y = 'co5_dat_id')
-full5 <- full5 %>% select('c_pseudonym', 'IMS', 'c_date_time_to', 'c_val')
-
-full6 <- full6 %>% select('IMS', 'c_date_time_to', 'c_val', 'co6_patient_id')
-full6 <-  full6[!(is.na(full6$co6_patient_id) | full6$co6_patient_id==""), ]
-full6 <-  full6[!(is.na(full6$co6_patient_id) | full6$c_val==""), ]
-full6$co6_patient_id<-as.integer64(full6$co6_patient_id)
-full6 <- merge(full6, key6, by = 'co6_patient_id')
-full6 <- full6 %>% select('c_pseudonym', 'IMS', 'c_date_time_to','c_val')
-full <- rbind(full5,full6) # 125109 
-
-# counting variable
-full$IMS<- as.integer(full$IMS)
-full$one <- 1
-
-# remove pt thats not related to the stay
-time <- data %>% select('c_pseudonym', 'aufn','entl')
-safe <-full
-full <- merge(full, time, by = 'c_pseudonym')
-full$controll <- full$c_date_time_to
-full$c_date_time_to<-sub(" .*", "", full$c_date_time_to)
-full$c_date_time_to <- dmy(full$c_date_time_to)
-full$aufn <- as.Date(full$aufn)
-full$entl <- as.Date(full$entl)
-full <- subset(full, full$c_date_time_to >= full$aufn & full$c_date_time_to <= full$entl)
-
-# now remove unnecessary columns during the relevant stay
-full <- full %>% select(-c('aufn','entl'))
-a <- full %>% group_by(c_pseudonym) %>% count(one)
-
-# summarize data per patient (Max and Min is for another analysis with the same data, for my analysis I use the long format data)
-count <- a 
-MaxIMS <-full %>% group_by(c_pseudonym) %>% summarise(max = max(IMS, na.rm=TRUE))
-MinIMS <- full %>% group_by(c_pseudonym) %>% summarise(min = min(IMS, na.rm=TRUE))
-
 data <- merge(data, count, by = 'c_pseudonym', all.x = TRUE)
 data <- merge(data, MaxIMS, by = 'c_pseudonym', all.x = TRUE)
 data <- merge(data, MinIMS, by = 'c_pseudonym', all.x = TRUE)
@@ -371,7 +280,6 @@ data <- data %>% select(-c('one'))
 # used for the long analysis, names solution is not pretty I know
 names(full)[6]<-'exacttime'
 
-write.table(indexthing, '/Users/maximilianlindholz/Final/index.csv', sep = '|', row.names = FALSE) 
 write.table(data, '/Users/maximilianlindholz/Final/baseinfo.csv', sep = '|', row.names = FALSE)
 write.table(full, '/Users/maximilianlindholz/Final/pt.csv', sep = '|',row.names = F)
 write.table(key5, '/Users/maximilianlindholz/Final/key5.csv', sep = '|',row.names = F)
