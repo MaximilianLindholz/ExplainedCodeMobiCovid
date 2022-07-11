@@ -10,8 +10,6 @@ long <- fread('/Users/maximilianlindholz/Final/during.csv')
 
 # general patient data
 data <- fread('/Users/maximilianlindholz/Final/baseinfo5.csv')
-iv <- fread('/Users/maximilianlindholz/Final/norepiclean.csv')
-iv <- subset(iv, iv$length >10 & iv$c_rate <1 )
 
 #qc/classes
 summary(data)
