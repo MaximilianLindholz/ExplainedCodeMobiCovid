@@ -3,6 +3,7 @@ library(data.table)
 library(tidyverse)
 library(lme4)
 library(car)
+
 options(contrasts=c(unordered="contr.sum", ordered="contr.poly"))
 
 # mobilization with norepinephrine
@@ -51,36 +52,26 @@ exp(mortmodel$coefficients)
 exp(confint(mortmodel))
 
 # 4 Hospital los
-data$Behandlungsdauer <- log(data$Behandlungsdauer)
-losmodel <- lm(Behandlungsdauer ~geschlecht+age+Elixhauser+ dialyse+ecmo+highflow+intubated+maskedventilation+tracheostomie+admissionapache+admissionsofa+medianAbsoluteRass+Fachrichtung+covid+norepinephrine, data = data)
+losmodel <- lm(HospLOS ~geschlecht+age+Elixhauser+ dialyse+ecmo+highflow+intubated+maskedventilation+tracheostomie+admissionapache+admissionsofa+medianAbsoluteRass+Fachrichtung+covid+norepinephrine, data = data)
 summary(losmodel)
 Anova(losmodel, type = 3)
+confint(losmodel)
 # plot(losmodel)
 
-# given that is log transformed => re transform to percentage change, number is from summary
-value <- (exp(losmodel$coefficients['norepinephrine'])-1)*100
-retransform <- function(x){
-  a <- (exp(x)-1)*100
-  return(a)
-}
-exp(1)^confint(losmodel)
-# 100 × (𝑒𝛽1 − 1)
+# backup to plot 
+plotting <- long
 
-# 5 In vs. Out of bed
+# 5 Intensity
 long$outofbed <-0
 long$outofbed[long$IMS>3]<-1
 long$outofbed<-as.factor(long$outofbed)
-
-plotting <- long
-
 intensitymodel <- glmer(outofbed~geschlecht+age+obes+admissionapache+admissionsofa+Elixhauser+RASS+dialyse+ecmo+highflow+intubated+maskedventilation+tracheostomie+Fachrichtung+covid+c_rate+(1|c_pseudonym), data = long, family = "binomial",glmerControl(optimizer ='optimx', optCtrl=list(method='nlminb')))
 summary(intensitymodel)
 Anova(intensitymodel)
 exp(-3.693469)
 exp(confint(intensitymodel,parm="c_rate",method="Wald"))
 
-
-# # show boxplot in vs out of bed
+# show histogram in vs out of bed
 plotting$outofbed <- as.character(plotting$outofbed)
 plotting$outofbed[plotting$outofbed==0]<- 'In bed'
 plotting$outofbed[plotting$outofbed==1]<- 'Out of bed'
@@ -89,7 +80,6 @@ ggplot(plotting, aes(x = c_rate , group = outofbed, fill = outofbed)) +
   labs(fill='Type of mobilization') +
   xlab('Norepinephrine rate in mcg/kg/min')+
   theme_classic()
-
 
 # descriptive statistics
 a <- plotting %>%                               # Summary by group using dplyr
@@ -110,29 +100,48 @@ length(inbed$c_rate[inbed$c_rate>0.2])
 outofbed <- subset(long, long$outofbed==1)
 length(outofbed$c_rate[outofbed$c_rate>0.2])
 # 17
+
 # 6 mortality
 mobimit <- unique(long$c_pseudonym)
-norepimob <- subset(data, data$norepinephrine==1)
-norepimob$mit <-0
-norepimob$mit[norepimob$c_pseudonym %in% mobimit]<-1
+data$mobimit <-0
+data$mobimit[data$c_pseudonym %in% mobimit]<-1
 
-mortmodel2 <- glm(tod ~ geschlecht+age+Elixhauser+ dialyse+ecmo+highflow+intubated+maskedventilation+tracheostomie+admissionapache+admissionsofa+medianAbsoluteRass+Fachrichtung+covid+mit, data = norepimob, family = 'binomial')
+mortmodel2 <- glm(tod ~ geschlecht+age+Elixhauser+ dialyse+ecmo+highflow+intubated+maskedventilation+tracheostomie+admissionapache+admissionsofa+medianAbsoluteRass+Fachrichtung+covid+mobimit, data = data, family = 'binomial')
 summary(mortmodel2)
 Anova(mortmodel2, type = 3)
 exp(mortmodel2$coefficients)
 exp(confint(mortmodel2))
 
+# unadjusted part
+# frequency
+pd2 <- lm(perday~norepinephrine, data = data)
+summary(pd2)
+confint(pd2)
 
+# mortality
+M2 <- matrix(c(3189,5277,   1009,1182), nrow = 2)
+rownames(M2) <- c("Norepinephrine", "No Norepinephrine")
+colnames(M2) <- c("Kein Tod", "Tod")
+(oddsRatio(M2, conf.level = 0.95, verbose = T))
+
+# early mobilization
+M3 <- matrix(c(2539,3738,   1659,2721), nrow = 2)
+rownames(M3) <- c("Norepinephrine", "No Norepinephrine")
+colnames(M3) <- c("Keine Frühmobi", "Frühmobi")
+(oddsRatio(M3, conf.level = 0.95, verbose = T))
+
+# hospital los
+losmodel2<-lm(HospLOS~norepinephrine, data = data)
+summary(losmodel2)
+confint(losmodel2)
 
 # plotting part
 library(sjPlot)
 library(sjlabelled)
 library(sjmisc)
 
-
 # dichotom outcomes
 plot_models(intensitymodel, earlymob_model, mortmodel, p.shape=T)
-
 
 # per day
 p2 <- plot_models(model1, grid = TRUE, show.p=TRUE, 
