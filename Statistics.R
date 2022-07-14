@@ -15,16 +15,6 @@ data <- fread('/Users/maximilianlindholz/Final/baseinfo5.csv')
 #qc/classes
 summary(data)
 str(data)
-# data$Fachrichtung<-as.factor(data$Fachrichtung)
-# data$geschlecht<- as.factor(data$geschlecht)
-# data$obes <- as.factor(data$obes)
-# data$dialyse <- as.factor(data$dialyse)
-# data$ecmo <- as.factor(data$ecmo)
-# data$highflow <- as.factor(data$highflow)
-# data$intubated <- as.factor(data$intubated)
-# data$maskedventilation <- as.factor(data$maskedventilation)
-# data$tracheostomie <- as.factor(data$tracheostomie)
-# data$covid <- as.factor(data$covid)
 
 # merge long and wide
 long <- merge(long, data, by = "c_pseudonym")
@@ -113,19 +103,20 @@ exp(mortmodel2$coefficients)
 exp(confint(mortmodel2))
 
 # unadjusted part
+# Table 2 mit und ohne covariaten stupide anpassen mit lm / glm
 # frequency
 pd2 <- lm(perday~norepinephrine, data = data)
 summary(pd2)
 confint(pd2)
 
 # mortality
-M2 <- matrix(c(3189,5277,   1009,1182), nrow = 2)
+M2 <- matrix(c(3189,5277,1009,1182), nrow = 2)
 rownames(M2) <- c("Norepinephrine", "No Norepinephrine")
 colnames(M2) <- c("Kein Tod", "Tod")
-(oddsRatio(M2, conf.level = 0.95, verbose = T))
+oddsRatio(M2, conf.level = 0.95, verbose = T)
 
 # early mobilization
-M3 <- matrix(c(2539,3738,   1659,2721), nrow = 2)
+M3 <- matrix(c(2539,3738,1659,2721), nrow = 2)
 rownames(M3) <- c("Norepinephrine", "No Norepinephrine")
 colnames(M3) <- c("Keine Frühmobi", "Frühmobi")
 (oddsRatio(M3, conf.level = 0.95, verbose = T))
@@ -135,24 +126,45 @@ losmodel2<-lm(HospLOS~norepinephrine, data = data)
 summary(losmodel2)
 confint(losmodel2)
 
-# plotting part
-library(sjPlot)
-library(sjlabelled)
-library(sjmisc)
+# mean dose per group per lmer
+pergr <- lmer(c_rate~outofbed+(1|c_pseudonym), data = long)
+summary(pergr)
+confint(pergr)
 
-# dichotom outcomes
-plot_models(intensitymodel, earlymob_model, mortmodel, p.shape=T)
+# 95 percent interval
+# out of bed
+a <- subset(long, long$outofbed==1)
+quantile(tapply(a$c_rate, a$c_pseudonym, mean), probs=c(0.95))
 
-# per day
-p2 <- plot_models(model1, grid = TRUE, show.p=TRUE, 
-            p.shape=T)
-# los model
-p3 <- plot_models(losmodel, show.p=TRUE, grid = TRUE, p.shape=T, transform = "retransform", axis.title = "Percent increase/decrease) for every one-unit increase (Log-transformed data)")
-# proportional change => e.g. 1.4 times as long as non norepinephrine recieving patients
-
-library(gridExtra)
-grid.arrange(p1,p11,p111,p2,p3, nrow = 2)
+# in bed
+b <- subset(long, long$outofbed==0)
+quantile(tapply(b$c_rate, b$c_pseudonym, mean), probs=c(0.95))
 
 
+# groups chi square
+mydata <- cbind(c(508, 17), c(2428, 311))
+mobi=c("in-bed", "out-of-bed")
+dose=c("highepinephrine", "lowepinephrine")
 
+# get chisq
+M <- as.table(mydata)
+dimnames(M) <- list(mobi=mobi, dose=dose)
+Xsq <- chisq.test(M)
+Xsq
+
+#Xsq.sim <- chisq.test(M, simulate.p.value=T, B = 100000000); Xsq.sim
+MS <- as.data.frame(long)
+rownames(MS)=mobi
+colnames(MS)=dose
+MS$Summe <- MS$highepinephrine + MS$lowepinephrine
+MS$highperc <- round(100*MS$high/MS$Summe, digits=1)
+MS$lowperc <- round(100*MS$low/MS$Summe, digits=1)
+MS <- rbind(MS, c(NA, NA, sum(MS$Summe), NA, NA))
+rownames(MS)[3] <- "Summe"
+
+MS$highepinephrine[c(1,2)] <- paste0(MS$highepinephrine[c(1,2)], " (", MS$highperc[c(1,2)], " %)")
+MS$lowepinephrine[c(1,2)] <- paste0(MS$lowepinephrine[c(1,2)], " (", MS$lowperc[c(1,2)], " %)")
+MS$Summe[c(1,2)] <- paste0(MS$Summe[c(1,2)], " (100 %)")
+MS$P <- c(NA, NA, signif(Xsq$p.value, 2))
+write.table(MS[,c(1:3,6)], "chis2table.txt", row.names=T, col.names=T, sep="\t", quote=F, na="")
 
