@@ -30,8 +30,8 @@ print(tab1, showAllLevels = TRUE)
 tab3Mat <- print(tab1,showAllLevels = TRUE, quote = FALSE, noSpaces = TRUE, printToggle = FALSE)
 
 # table 2
-tab2 <- CreateTableOne(vars = c("perday", "frühmobi", "tod",  'HospLOS'), strata = "norepinephrine", 
-                       data = data, factorVars = c("tod","frühmobi"))
+tab2 <- CreateTableOne(vars = c("perday", "frühmobi","averagelengthofPT", "tod",  'HospLOS'), strata = "norepinephrine", 
+                       data = data, factorVars = c("tod","frühmobi"), test = F)
 
 print(tab2, showAllLevels = TRUE,formatOptions = list(big.mark = ","))
 
@@ -42,7 +42,7 @@ long <- fread('/Users/maximilianlindholz/Final/during.csv')
 long$outofbed[long$IMS>3]<-1
 long$outofbed[long$IMS<=3]<-0
 tab3 <- CreateTableOne(vars = c("c_rate"), strata = "outofbed", 
-                       data = long, factorVars = c("outofbed"))
+                       data = long, factorVars = c("outofbed"), test = F)
 
 outofb <- print(tab3, showAllLevels = TRUE,formatOptions = list(big.mark = ","))
 
