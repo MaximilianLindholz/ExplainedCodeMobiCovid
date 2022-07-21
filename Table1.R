@@ -30,7 +30,7 @@ print(tab1, showAllLevels = TRUE)
 tab3Mat <- print(tab1,showAllLevels = TRUE, quote = FALSE, noSpaces = TRUE, printToggle = FALSE)
 
 # table 2
-tab2 <- CreateTableOne(vars = c("perday", "frühmobi","averagelengthofPT", "tod",  'HospLOS'), strata = "norepinephrine", 
+tab2 <- CreateTableOne(vars = c("perday", "frühmobi", "tod"), strata = "norepinephrine", 
                        data = data, factorVars = c("tod","frühmobi"), test = F)
 
 print(tab2, showAllLevels = TRUE,formatOptions = list(big.mark = ","))
@@ -39,12 +39,27 @@ tab4Mat <- print(tab2,showAllLevels = TRUE, quote = FALSE, noSpaces = TRUE, prin
 
 # rates
 long <- fread('/Users/maximilianlindholz/Final/during.csv')
-long$outofbed[long$IMS>3]<-1
-long$outofbed[long$IMS<=3]<-0
-tab3 <- CreateTableOne(vars = c("c_rate"), strata = "outofbed", 
-                       data = long, factorVars = c("outofbed"), test = F)
+long$outofbed[long$IMS>3]<-'out-of-bed'
+long$outofbed[long$IMS<=3]<-'in-bed'
+long$highmedlow <- 'low'
+long$highmedlow[long$c_rate>0.05] <- 'moderate'
+long$highmedlow[long$c_rate>0.2] <- 'high'
+long$highmedlow<-factor(long$highmedlow, levels=c("low","moderate","high"))
+
+for (i in unique(long$highmedlow)){
+  print(i)
+  tesss <- long[long$highmedlow == i]
+  tab3 <- CreateTableOne(vars = c("outofbed"), strata = "adv", 
+                         data = tesss, factorVars = c("outofbed"), test = T)
+  
+  outofb <- print(tab3, showAllLevels = TRUE,formatOptions = list(big.mark = ","))
+  outofb
+}
+tab3 <- CreateTableOne(vars = c("outofbed"), strata = "adv", 
+                       data = long, factorVars = c("outofbed"), test = T)
 
 outofb <- print(tab3, showAllLevels = TRUE,formatOptions = list(big.mark = ","))
+
 
 
 

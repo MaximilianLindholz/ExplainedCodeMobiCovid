@@ -115,9 +115,9 @@ physiotexte <- rbind(physiostrich, physiopunkt)
 
 # manual cleanup steps after scoping
 
-# read labeled physiotherapy data, removing values that were wrongly labeled manually (Cases, where it was not physiotherapy but was included in the same variable,
-# importantly this wont affect the distribution of the regular IMS scores, because it only removes scores where not pt was done and those cases were not included in the
-# quality assessment step with caret from above e.g. because of faulty entry in HIS)
+# removing values that were wrongly labeled manually (Cases, where it was not physiotherapy but was included in the same variable,
+# importantly this wont affect the distribution of the regular IMS scores, because it only removes scores where no pt was done and those cases were not included in the
+# quality assessment step with caret from above e.g. because of faulty entry in HIS) //
 full <- physiotexte
 full <- subset(full, full$IMS != 7)
 full <-  full[!(full$c_val==""), ]
@@ -141,11 +141,21 @@ full <- full[!grepl("keine", full$c_val),]
 full <- full[!grepl("extubation", full$c_val),]
 full <- full[!grepl("screening", full$c_val),]
 full <- full[!grepl("abgesagt", full$c_val),]
-full <- full[!grepl("abgebrochen", full$c_val),]
 full <- full[!grepl("angehörigen kommen", full$c_val),]
+# extract denial of therapy
+abgelehnt <- full[grepl("abgelehnt", full$c_val),]
+abgelehnt2 <- full[grepl("lehnt", full$c_val),]
+abgelehnt <- rbind(abgelehnt, abgelehnt2)
+full <- full[!grepl("lehnt", full$c_val),]
+full <- full[!grepl("abgelehnt", full$c_val),]
+full <- full[!grepl("kaloriemetrie", full$c_val),]
+full <- full[!grepl("Sprechaufsatz", full$c_val),]
+full <- full[!grepl("sbt", full$c_val),]
 
 
 write.table(full, '/Users/maximilianlindholz/Final/physiotextelabeled.csv', sep = "|",row.names = FALSE, quote = TRUE)
+
+
 
 
 
