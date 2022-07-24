@@ -8,7 +8,6 @@ long <- fread('/Users/maximilianlindholz/Final/during.csv')
 # general patient data
 data <- fread('/Users/maximilianlindholz/Final/baseinfo5.csv')
 
-
 myVars <- c("age","Elixhauser","admissionapache", "admissionsofa", "meanAbsoluteRass")
 
 ## Vector of categorical variables that need transformation
@@ -22,9 +21,9 @@ data[,catVars] <- sapply(data[,catVars],function(x) ifelse(x==1,"yes","no"))
 data$Fachrichtung[data$Fachrichtung=="multi"]<-"Multiple Specialties"
 ## Create a TableOne object
 tab1 <- CreateTableOne(vars = c("age","Elixhauser","admissionapache", "admissionsofa", "medianAbsoluteRass","geschlecht", "obes","dialyse", "ecmo", "highflow", 
-                                "intubated", "maskedventilation", "tracheostomie","Fachrichtung", "covid"), strata = "norepinephrine", 
+                                "intubated", "maskedventilation", "tracheostomie","Fachrichtung", "covid",'CovidStationstyp'), strata = "norepinephrine", 
                        data = data, factorVars = c("geschlecht", "obes","dialyse", "ecmo", "highflow", 
-                                                   "intubated", "maskedventilation", "tracheostomie","prone","Fachrichtung"))
+                                                   "intubated", "maskedventilation", "tracheostomie","prone","Fachrichtung",'CovidStationstyp','norepinephrine'))
 print(tab1, showAllLevels = TRUE)
 
 tab3Mat <- print(tab1,showAllLevels = TRUE, quote = FALSE, noSpaces = TRUE, printToggle = FALSE)

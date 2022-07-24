@@ -8,7 +8,6 @@ options(contrasts=c(unordered="contr.sum", ordered="contr.poly"))
 
 # mobilization with norepinephrine
 long <- fread('/Users/maximilianlindholz/Final/during.csv')
-
 adverse <- subset(long, long$adv ==1)
 
 # general patient data
@@ -68,14 +67,7 @@ ggplot(plotting, aes(x = c_rate , fill = outofbed)) +
   xlab('Norepinephrine rate in mcg/kg/min')+
   theme_classic()
 
-# in bed
-inbed <- subset(long, long$outofbed==0)
-length(inbed$c_rate[inbed$c_rate>0.2]) # 507
-# out of bed
-outofbed <- subset(long, long$outofbed==1)
-length(outofbed$c_rate[outofbed$c_rate>0.2]) # 17
-
-# 5 mortality
+# 5 mortality mobi with
 mobimit <- unique(long$c_pseudonym)
 data$mobimit <-0
 data$mobimit[data$c_pseudonym %in% mobimit]<-1
@@ -131,7 +123,6 @@ long$highmedlow[long$c_rate>0.2] <- 2
 
 # adverse events
 ftable(long$highmedlow, long$outofbed, long$adv)
-mantelhaen.test(long$highmedlow, long$outofbed, long$adv)
 
 myout_orig <- mantelhaen.test(long$highmedlow, long$outofbed, long$adv)
 emp_df <- data.frame("Statistic"= NA, "P"= NA, "Durchgang"= NA)
