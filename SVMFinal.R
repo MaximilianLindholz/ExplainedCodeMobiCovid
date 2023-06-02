@@ -116,43 +116,30 @@ physiopunkt$c_date_time_to<- as.POSIXct(physiopunkt$c_date_time_to, format = "%d
 physiotexte <- rbind(physiostrich, physiopunkt)
 
 # manual cleanup steps after scoping
-
 # removing values that were wrongly labeled manually (Cases, where it was not physiotherapy but was included in the same variable,
 # importantly this wont affect the distribution of the regular IMS scores, because it only removes scores where no pt was done and those cases were not included in the
 # quality assessment step with caret from above e.g. because of faulty entry in HIS) //
 full <- physiotexte
-full <- subset(full, full$IMS != 7)
-full <-  full[!(full$c_val==""), ]
-full <-  full[!(full$c_val=="-"), ]
-full <-  full[!(full$IMS==""), ]
-full <- subset(full, full$IMS<11)
+
+# filter operationen
+full <- subset(full, IMS != 7 & IMS<11 & !(c_val %in% c("", "-")) & IMS != "")
+
+# to lowercase
 full$c_val <- tolower(full$c_val)
-full <- full[!grepl("weaning", full$c_val),]
-full <- full[!grepl("verlegt", full$c_val),]
-full <- full[!grepl(" op ", full$c_val),]
-full <- full[!grepl("op ", full$c_val),]
-full <- full[!grepl(" op", full$c_val),]
-full <- full[!grepl("psycho", full$c_val),]
-full <- full[!grepl("krisen", full$c_val),]
-full <- full[!grepl("edk", full$c_val),]
-full <- full[!grepl("intubation", full$c_val),]
-full <- full[!grepl("cough", full$c_val),]
-full <- full[!grepl("beatmungseinstellung", full$c_val),]
-full <- full[!grepl("ecmo", full$c_val),]
-full <- full[!grepl("keine", full$c_val),]
-full <- full[!grepl("extubation", full$c_val),]
-full <- full[!grepl("screening", full$c_val),]
-full <- full[!grepl("abgesagt", full$c_val),]
-full <- full[!grepl("angehörigen kommen", full$c_val),]
+
+# exclude words 
+exclude_words <- c("weaning", "verlegt", " op ", "op ", " op", "psycho", "krisen", 
+                   "edk", "intubation", "cough", "beatmungseinstellung", "ecmo", 
+                   "keine", "extubation", "screening", "abgesagt", 
+                   "angehörigen kommen", "lehnt", "abgelehnt", "kaloriemetrie", 
+                   "Sprechaufsatz", "sbt")
+full <- full[!sapply(full$c_val, function(x) any(grepl(x, exclude_words))),]
+
 # extract denial of therapy
-abgelehnt <- full[grepl("abgelehnt", full$c_val),]
-abgelehnt2 <- full[grepl("lehnt", full$c_val),]
-abgelehnt <- rbind(abgelehnt, abgelehnt2)
-full <- full[!grepl("lehnt", full$c_val),]
-full <- full[!grepl("abgelehnt", full$c_val),]
-full <- full[!grepl("kaloriemetrie", full$c_val),]
-full <- full[!grepl("Sprechaufsatz", full$c_val),]
-full <- full[!grepl("sbt", full$c_val),]
+abgelehnt_words <- c("abgelehnt", "lehnt")
+abgelehnt <- full[sapply(full$c_val, function(x) any(grepl(x, abgelehnt_words))),]
+
+
 
 
 write.table(full, 'physiotextelabeled.csv', sep = "|",row.names = FALSE, quote = TRUE)
