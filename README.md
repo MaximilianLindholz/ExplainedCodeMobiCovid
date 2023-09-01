@@ -1,10 +1,10 @@
-# Mobilization of critically ill patients receiving Norepinephrine. A Retrospective cohort study.
+# 🏥 Mobilization of critically ill patients receiving Norepinephrine. A Retrospective cohort study.
 
 Code used in the linked paper for data preprocessing. <br>
 🤖 Used Algorithm: SVM = Fast linear Support vector machine algorithm classifier for automated labeling of free text mobilization entries. 
 
 For more information and updates on the Quanteda Package, as well as how to implement Machine Learning/Text mining models with Quanteda in R see: <br>
-https://quanteda.io
+📖 https://quanteda.io
 
 For the corresponding paper:  <br>
 📰 https://ccforum.biomedcentral.com/articles/10.1186/s13054-022-04245-0
